@@ -15,7 +15,7 @@ npm run data
 npm run dev
 ```
 
-`npm run data` は `palworld.gg` の英語/日本語 Paldeck を取得し、297 件の正規化データと Neo4j 用 CSV/Cypher を生成します。画像は元サイトの URL を参照します。サイト運営者の許諾・規約に従って利用してください。
+`npm run data` は `palworld.gg` の英語/日本語 Paldeck を取得し、正規化データと Neo4j 用 CSV/Cypher を生成します。生成スナップショットと CSV/Cypher は大容量のため Git 管理外です。画像は元サイトの URL を参照します。サイト運営者の許諾・規約に従って利用してください。
 
 ## Data model
 
@@ -38,7 +38,7 @@ npm run dev
 
 ## GitHub Pages
 
-`.github/workflows/deploy-pages.yml` builds the committed data snapshot and deploys `dist/` to [GitHub Pages](https://kafka2306.github.io/pal-atlas/). Set Pages source to **GitHub Actions** in repository settings if it is not enabled yet. Run `npm run data` intentionally when refreshing the external snapshot; this keeps a Pages deploy reproducible even if a source page changes or is unavailable.
+`.github/workflows/deploy-pages.yml` refreshes the generated data, builds `dist/`, and deploys it to [GitHub Pages](https://kafka2306.github.io/pal-atlas/). Set Pages source to **GitHub Actions** in repository settings if it is not enabled yet. The generated snapshot is intentionally not committed; the workflow and local build both regenerate it from the recorded sources.
 
 ## Notice
 

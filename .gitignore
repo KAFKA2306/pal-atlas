@@ -2,3 +2,13 @@ node_modules/
 dist/
 .DS_Store
 *.local
+
+# Generated snapshots: refresh with `npm run data`; do not commit large derived files.
+data/pals.json
+data/breeding.json
+data/sources.json
+neo4j/pals.csv
+neo4j/breeding_edges.csv
+neo4j/special_edges.csv
+neo4j/import.cypher
+neo4j/queries.cypher

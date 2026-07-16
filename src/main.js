@@ -30,9 +30,22 @@ const copy = {
   },
 };
 
+function readPreference(key, fallback, allowed) {
+  try {
+    const value = localStorage.getItem(key);
+    return allowed.includes(value) ? value : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function writePreference(key, value) {
+  try { localStorage.setItem(key, value); } catch { /* private storage can be unavailable */ }
+}
+
 const state = {
-  lang: localStorage.getItem('pal-atlas-lang') || 'ja',
-  theme: localStorage.getItem('pal-atlas-theme') || 'dark',
+  lang: readPreference('pal-atlas-lang', 'ja', ['ja', 'en']),
+  theme: readPreference('pal-atlas-theme', 'dark', ['dark', 'light']),
   selectedId: byId.has('anubis') ? 'anubis' : pals[0].id,
   stack: [byId.has('anubis') ? 'anubis' : pals[0].id],
   search: '',
@@ -44,6 +57,7 @@ const elementLabels = { neutral: ['無', 'Neutral'], fire: ['火', 'Fire'], wate
 const elText = (element) => elementLabels[element]?.[state.lang === 'ja' ? 0 : 1] ?? element;
 const t = (key) => copy[state.lang][key] ?? key;
 const selected = () => byId.get(state.stack.at(-1) ?? state.selectedId) ?? pals[0];
+let appBound = false;
 
 function esc(value) {
   return String(value).replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
@@ -75,6 +89,28 @@ function candidateRows(pal) {
   const direct = directParentRows(pal).flatMap((row) => [row.parentA, row.parentB]).filter(Boolean);
   const rankNear = [...pals].sort((a, b) => Math.abs(a.breedingRank - pal.breedingRank) - Math.abs(b.breedingRank - pal.breedingRank)).filter((item) => item.id !== pal.id);
   return [...new Map([...direct, ...rankNear].map((item) => [item.id, item])).values()].slice(0, 5);
+}
+
+function filteredPals() {
+  const query = state.search.trim().toLowerCase();
+  return pals.filter((item) => `${item.nameEn} ${item.nameJa}`.toLowerCase().includes(query) && (state.element === 'all' || item.elements.includes(state.element)))
+    .sort((a, b) => a.breedingRank - b.breedingRank || a.order - b.order);
+}
+
+function catalogMarkup(items) {
+  return items.length ? items.map((item) => card(item)).join('') : `<div class="empty">${t('noResult')}</div>`;
+}
+
+function updateCatalog() {
+  const items = filteredPals();
+  const grid = document.querySelector('.atlas-grid');
+  if (grid) grid.innerHTML = catalogMarkup(items);
+  const resultCount = document.querySelector('.result-count');
+  if (resultCount) resultCount.textContent = `${items.length} / ${pals.length}`;
+}
+
+function applyTheme() {
+  document.documentElement.dataset.colorTheme = state.theme;
 }
 
 function card(pal, compact = false) {
@@ -113,26 +149,26 @@ function insight(pal) {
 }
 
 function render() {
-  document.documentElement.dataset.theme = state.theme;
+  applyTheme();
   const pal = selected();
-  const filtered = pals.filter((item) => `${item.nameEn} ${item.nameJa}`.toLowerCase().includes(state.search.toLowerCase()) && (state.element === 'all' || item.elements.includes(state.element)));
+  const filtered = filteredPals();
   const allElements = [...new Set(pals.flatMap((item) => item.elements))].sort();
   const uniqueSpecial = special.length;
   document.querySelector('#app').innerHTML = `<main class="shell">
-    <header class="topbar"><a class="brand" href="#top"><span class="brand-glyph">✳</span><span>PAL ATLAS</span><small>v1.0 / GRAPH VIEW</small></a><nav><button class="text-button ${state.view === 'atlas' ? 'active' : ''}" data-view="atlas">${t('catalog')}</button><button class="text-button ${state.view === 'graph' ? 'active' : ''}" data-view="graph">${t('graph')}</button><button class="icon-button" data-lang="${state.lang === 'ja' ? 'en' : 'ja'}">${state.lang === 'ja' ? 'EN' : '日'}</button><button class="icon-button" data-theme="toggle">${state.theme === 'dark' ? '☼' : '☾'}</button></nav></header>
+    <header class="topbar"><a class="brand" href="#top"><span class="brand-glyph">✳</span><span>PAL ATLAS</span><small>v1.0 / GRAPH VIEW</small></a><nav><button class="text-button ${state.view === 'atlas' ? 'active' : ''}" data-view="atlas">${t('catalog')}</button><button class="text-button ${state.view === 'graph' ? 'active' : ''}" data-view="graph">${t('graph')}</button><button class="icon-button" data-lang-toggle="true">${state.lang === 'ja' ? 'EN' : '日'}</button><button class="icon-button" data-theme-toggle="true">${state.theme === 'dark' ? '☼' : '☾'}</button></nav></header>
     <section class="hero" id="top"><div class="hero-copy"><span class="eyebrow">${t('eyebrow')}</span><h1>${t('title')}</h1><p>${t('lead')}</p></div><div class="hero-stamp"><span>CATALOG</span><strong>${String(palData.meta.catalogCount).padStart(3, '0')}</strong><small>${state.lang === 'ja' ? 'パル indexed' : 'Pals indexed'}</small></div></section>
     <section class="metric-row"><div><b>${palData.meta.catalogCount}</b><span>${t('catalog')}</span></div><div><b>${palData.meta.normalPairCount.toLocaleString()}</b><span>${t('normal')} edges</span></div><div><b>${uniqueSpecial}</b><span>${t('special')} edges</span></div></section>
-    <section class="workspace ${state.view === 'graph' ? 'graph-only' : ''}">
+    <section class="workspace ${state.view === 'graph' ? 'graph-only' : ''}" id="atlas-view">
       <div class="main-column"><div class="section-head"><div><span class="micro-label">01 / ${t('choose')}</span><h2>${t('cards')}</h2></div><span class="result-count">${filtered.length} / ${pals.length}</span></div>
         <div class="controls"><label class="search-box"><span>⌕</span><input data-search type="search" value="${esc(state.search)}" placeholder="${t('search')}" /></label><select data-element aria-label="${t('all')}"><option value="all">${t('all')} elements</option>${allElements.map((element) => `<option value="${element}" ${state.element === element ? 'selected' : ''}>${elText(element)}</option>`).join('')}</select><span class="control-note">${t('viewNote')}</span></div>
-        <div class="atlas-grid">${filtered.length ? filtered.map((item) => card(item)).join('') : `<div class="empty">${t('noResult')}</div>`}</div>
+        <div class="atlas-grid">${catalogMarkup(filtered)}</div>
       </div>
       <aside class="detail-column"><div class="detail-card"><div class="detail-kicker"><span>02 / ${t('select')}</span><span class="status-dot"></span></div><div class="trail"><button data-back ${state.stack.length > 1 ? '' : 'disabled'}>←</button><span>${state.stack.map((id) => esc(palName(byId.get(id)))).join(' <i>→</i> ')}</span></div><div class="selected-portrait"><div class="portrait-ring"></div><img src="${pal.imageUrl}" alt="${esc(palName(pal))}" /></div><div class="selected-title"><span class="micro-label">#${String(pal.order).padStart(3, '0')} / ${pal.rarityTier}</span><h2>${esc(palName(pal))}</h2><p>${pal.nameEn === pal.nameJa ? '' : esc(state.lang === 'ja' ? pal.nameEn : pal.nameJa)}</p></div><div class="tag-row">${pal.elements.map((element) => `<span class="tag element-${element}">${elText(element)}</span>`).join('')}<span class="tag rank-tag">${t('rank')} ${pal.breedingRank}</span></div>
         <div class="divider"></div><div class="detail-label">${t('insight')}</div>${insight(pal)}<div class="detail-label">${t('parents')}</div><div class="parent-list">${parentRows(pal).slice(0, 4).map((row) => `<button class="parent-row" data-select="${row.parentA?.id}" data-drill="true" ${row.kind === 'special' ? 'data-special="true"' : ''}><span class="pair-images">${row.parentA ? `<img src="${row.parentA.imageUrl}" alt="" />` : ''}${row.parentB ? `<img src="${row.parentB.imageUrl}" alt="" />` : ''}</span><span><b>${row.parentA ? esc(palName(row.parentA)) : '—'} + ${row.parentB ? esc(palName(row.parentB)) : '—'}</b><small>${row.kind === 'special' ? t('direct') : `${t('nearby')} / ${row.intermediatePower}`}</small></span><span class="arrow">→</span></button>`).join('') || `<p class="muted">${t('unresolved')}</p>`}</div></div>
         <div class="formula-card"><span class="micro-label">03 / ${t('formula')}</span><p>${t('formulaText')}</p><code>⌊ (A + B + 1) / 2 ⌋ → nearest</code></div>
       </aside>
     </section>
-    <section class="graph-section">${graphView(pal)}<div class="candidate-panel"><div class="section-head"><div><span class="micro-label">04 / ${t('children')}</span><h2>${state.lang === 'ja' ? '次に見る候補' : 'Keep exploring'}</h2></div></div><p class="candidate-lead">${state.lang === 'ja' ? '選択中の値に近いパルをクリックすると、別の親候補の見え方に切り替わります。' : 'Click a nearby Pal to change the center and reveal a new parent signal.'}</p><div class="candidate-grid">${candidateRows(pal).map((item) => card(item, true)).join('')}</div></div></section>
+    <section class="graph-section" id="graph-view">${graphView(pal)}<div class="candidate-panel"><div class="section-head"><div><span class="micro-label">04 / ${t('children')}</span><h2>${state.lang === 'ja' ? '次に見る候補' : 'Keep exploring'}</h2></div></div><p class="candidate-lead">${state.lang === 'ja' ? '選択中の値に近いパルをクリックすると、別の親候補の見え方に切り替わります。' : 'Click a nearby Pal to change the center and reveal a new parent signal.'}</p><div class="candidate-grid">${candidateRows(pal).map((item) => card(item, true)).join('')}</div></div></section>
     <section class="source-section"><div><span class="micro-label">05 / ${t('sources')}</span><h2>${state.lang === 'ja' ? '出典を分けて保持する' : 'Keep provenance visible'}</h2></div><div class="source-list">${sourceData.sources.map((source) => `<a href="${source.url}" target="_blank" rel="noreferrer"><span>${esc(source.title)}</span><small>${esc(source.role)}</small><b>↗</b></a>`).join('')}</div></section>
     <footer><span>PAL ATLAS / independent fan project</span><span>${state.lang === 'ja' ? 'データは生成時点の出典ハッシュを保持' : 'Generated data keeps a source hash'}</span></footer>
   </main>`;
@@ -140,13 +176,68 @@ function render() {
 }
 
 function bind() {
-  document.querySelectorAll('[data-select]').forEach((element) => element.addEventListener('click', () => { const id = element.dataset.select; state.selectedId = id; state.stack = element.dataset.drill === 'true' ? [...state.stack, id] : [id]; state.view = 'graph'; render(); window.scrollTo({ top: 0, behavior: 'smooth' }); }));
-  document.querySelector('[data-back]')?.addEventListener('click', () => { if (state.stack.length > 1) { state.stack = state.stack.slice(0, -1); state.selectedId = state.stack.at(-1); render(); } });
-  document.querySelectorAll('[data-view]').forEach((element) => element.addEventListener('click', () => { state.view = element.dataset.view; render(); }));
-  document.querySelector('[data-lang]')?.addEventListener('click', () => { state.lang = state.lang === 'ja' ? 'en' : 'ja'; localStorage.setItem('pal-atlas-lang', state.lang); render(); });
-  document.querySelector('[data-theme]')?.addEventListener('click', () => { state.theme = state.theme === 'dark' ? 'light' : 'dark'; localStorage.setItem('pal-atlas-theme', state.theme); render(); });
-  document.querySelector('[data-search]')?.addEventListener('input', (event) => { state.search = event.target.value; render(); requestAnimationFrame(() => { const input = document.querySelector('[data-search]'); input?.focus(); input?.setSelectionRange(state.search.length, state.search.length); }); });
-  document.querySelector('[data-element]')?.addEventListener('change', (event) => { state.element = event.target.value; render(); });
+  const app = document.querySelector('#app');
+  if (!app || appBound) return;
+  appBound = true;
+  app.addEventListener('click', (event) => {
+    const target = event.target.closest('[data-select], [data-back], [data-view], [data-lang-toggle], [data-theme-toggle]');
+    if (!target || !app.contains(target)) return;
+    if (target.dataset.select) {
+      const id = target.dataset.select;
+      if (!byId.has(id)) return;
+      state.selectedId = id;
+      state.stack = target.dataset.drill === 'true' ? [...state.stack, id] : [id];
+      state.view = 'graph';
+      render();
+      requestAnimationFrame(() => document.querySelector('#graph-view')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+      return;
+    }
+    if (target.dataset.back !== undefined) {
+      if (state.stack.length > 1) {
+        state.stack = state.stack.slice(0, -1);
+        state.selectedId = state.stack.at(-1);
+        render();
+      }
+      return;
+    }
+    if (target.dataset.view) {
+      state.view = target.dataset.view;
+      document.querySelectorAll('[data-view]').forEach((button) => button.classList.toggle('active', button.dataset.view === state.view));
+      document.querySelector(`#${state.view === 'graph' ? 'graph-view' : 'atlas-view'}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return;
+    }
+    if (target.dataset.langToggle !== undefined) {
+      state.lang = state.lang === 'ja' ? 'en' : 'ja';
+      writePreference('pal-atlas-lang', state.lang);
+      render();
+      return;
+    }
+    if (target.dataset.themeToggle !== undefined) {
+      state.theme = state.theme === 'dark' ? 'light' : 'dark';
+      writePreference('pal-atlas-theme', state.theme);
+      applyTheme();
+      target.textContent = state.theme === 'dark' ? '☼' : '☾';
+    }
+  });
+  app.addEventListener('input', (event) => {
+    if (event.target.matches('[data-search]')) {
+      state.search = event.target.value;
+      updateCatalog();
+    }
+  });
+  app.addEventListener('change', (event) => {
+    if (event.target.matches('[data-element]')) {
+      state.element = event.target.value;
+      updateCatalog();
+    }
+  });
+  app.addEventListener('keydown', (event) => {
+    const target = event.target.closest('.graph-node');
+    if (target && (event.key === 'Enter' || event.key === ' ')) {
+      event.preventDefault();
+      target.click();
+    }
+  });
 }
 
 render();
