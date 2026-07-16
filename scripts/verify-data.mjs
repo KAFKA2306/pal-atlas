@@ -4,6 +4,7 @@ const ROOT = new URL('..', import.meta.url).pathname;
 const readJson = async (name) => JSON.parse(await readFile(`${ROOT}/data/${name}`, 'utf8'));
 const palData = await readJson('pals.json');
 const breedingData = await readJson('breeding.json');
+const childrenData = await readJson('children.json');
 const sourceData = await readJson('sources.json');
 const pals = palData.pals;
 const byId = new Map(pals.map((pal) => [pal.id, pal]));
@@ -42,6 +43,10 @@ for (const row of breedingData.special) {
   if (row.status !== 'resolved' || !byId.has(row.parentA) || !byId.has(row.parentB) || !byId.has(row.child)) throw new Error(`unresolved special row: ${row.id}`);
 }
 if (new Set(breedingData.special.map((row) => row.id)).size !== breedingData.special.length) throw new Error('duplicate special pair ids');
+if (Object.keys(childrenData.outputs).length !== pals.length) throw new Error('reverse breeding index does not cover catalog');
+for (const [parent, rows] of Object.entries(childrenData.outputs)) {
+  if (!byId.has(parent) || rows.some((row) => row.parent !== parent || !byId.has(row.otherParent) || !byId.has(row.child))) throw new Error(`invalid reverse breeding row: ${parent}`);
+}
 
 console.log(JSON.stringify({
   catalog: pals.length,

@@ -51,6 +51,12 @@ with sync_playwright() as p:
     page.locator("[data-back]").click()
     print("back", flush=True)
     results["breadcrumb_after_back"] = page.locator(".trail span").inner_text()
+    results["output_cards"] = page.locator(".output-card").count()
+    assert results["output_cards"] > 0, "reverse output cards did not render"
+    output_name = page.locator(".output-card strong").first.inner_text()
+    page.locator(".output-card").first.click()
+    assert output_name in page.locator(".trail span").inner_text(), "output card did not select its child"
+    page.locator("[data-back]").click()
     page.locator('[data-drill="true"][data-select]').first.click()
 
     print(results)

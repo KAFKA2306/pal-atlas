@@ -9,6 +9,8 @@ with sync_playwright() as p:
     page.goto(os.environ.get("PAL_ATLAS_URL", "http://127.0.0.1:5173"), wait_until="domcontentloaded")
     for endpoint in ("/api/index.json", "/api/pals.json", "/api/breeding.json", "/api/sources.json", "/api/pals/anubis.json"):
         assert page.request.get(os.environ.get("PAL_ATLAS_URL", "http://127.0.0.1:5173") + endpoint).ok, f"static API failed: {endpoint}"
+    anubis_detail = page.request.get(os.environ.get("PAL_ATLAS_URL", "http://127.0.0.1:5173") + "/api/pals/anubis.json").json()
+    assert len(anubis_detail["recipes"]["outputs"]) > 0, "reverse output index is empty"
     page.wait_for_selector(".pal-card")
     assert page.locator(".pal-card").count() >= 297, "catalog cards did not render"
     first_ranks = [int(value) for value in page.locator(".pal-card .card-rank").all_inner_texts()[:6]]
@@ -17,6 +19,12 @@ with sync_playwright() as p:
     assert page.locator(".recipe-row").count() >= 1, "recipe events did not render"
     assert page.locator(".recipe-row .recipe-pal.parent-a").count() == page.locator(".recipe-row .recipe-pal.parent-b").count(), "parent slots are not paired"
     assert page.locator(".recipe-row .recipe-pal.target").evaluate_all("els => els.every(el => el.tagName === 'SPAN')"), "recipe targets must not be clickable"
+    assert page.locator(".output-panel").count() == 1, "reverse output panel did not render"
+    assert page.locator(".output-card").count() > 0, "reverse output cards did not render"
+    output_name = page.locator(".output-card strong").first.inner_text()
+    page.locator(".output-card").first.click()
+    assert output_name in page.locator(".trail span").inner_text(), "output card did not select its child"
+    page.locator("[data-back]:not([disabled])").click()
     before = page.locator(".trail span").inner_text()
     page.locator('[data-drill="true"][data-select]').first.click()
     after = page.locator(".trail span").inner_text()

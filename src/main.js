@@ -1,5 +1,6 @@
 import palData from '../data/pals.json';
 import breedingData from '../data/breeding.json';
+import childrenUiData from '../data/children-ui.json';
 import sourceData from '../data/sources.json';
 import './styles.css';
 
@@ -8,13 +9,14 @@ const byId = new Map(pals.map((pal) => [pal.id, pal]));
 const byName = new Map(pals.map((pal) => [pal.nameEn, pal]));
 const featuredNormal = breedingData.featuredNormal;
 const special = breedingData.special.filter((row) => row.status === 'resolved');
+const outputs = childrenUiData.outputs;
 
 const copy = {
   ja: {
     eyebrow: 'PAL ATLAS / BREEDING GRAPH',
     title: '親をたどると、配合の地図になる。',
     lead: 'パルを選ぶと、実際の親ペアと配合値を表示します。親をクリックして配合をたどれます。',
-    catalog: '図鑑', graph: '配合グラフ', atlasLink: '図鑑へ', graphLink: '配合グラフへ', search: 'パルを検索', all: 'すべて', parents: '親候補', children: '関連パル', special: '特殊配合', normal: '通常配合', rank: '配合値', sources: '出典', insight: '見えてくる知見',
+    catalog: '図鑑', graph: '配合グラフ', atlasLink: '図鑑へ', graphLink: '配合グラフへ', search: 'パルを検索', all: 'すべて', parents: '親候補', children: '配合先', outputs: 'このパルから生まれる子', special: '特殊配合', normal: '通常配合', rank: '配合値', sources: '出典', insight: '見えてくる知見',
     choose: 'パルを選ぶ', formula: '通常配合のルール', formulaText: '親2体の配合値から中間値を出し、最も近い配合値のパルへ着地します。特殊配合はこのルールを上書きします。',
     direct: '固有レシピ', nearby: '値が近い親', unresolved: '未解決の出典行',
     cards: 'パル', noResult: '該当するパルがありません。',
@@ -23,7 +25,7 @@ const copy = {
     eyebrow: 'PAL ATLAS / BREEDING GRAPH',
     title: 'Trace the parents. Read the map.',
     lead: 'Choose a Pal to see its actual parent pairs and breeding rank. Click a parent to follow the graph.',
-    catalog: 'Atlas', graph: 'Breeding graph', atlasLink: 'Atlas', graphLink: 'Breeding graph', search: 'Search Pals', all: 'All', parents: 'Parent signals', children: 'Related Pals', special: 'Special', normal: 'Normal', rank: 'Breeding Rank', sources: 'Sources', insight: 'What this reveals',
+    catalog: 'Atlas', graph: 'Breeding graph', atlasLink: 'Atlas', graphLink: 'Breeding graph', search: 'Search Pals', all: 'All', parents: 'Parent signals', children: 'Outputs', outputs: 'Children from this Pal', special: 'Special', normal: 'Normal', rank: 'Breeding Rank', sources: 'Sources', insight: 'What this reveals',
     choose: 'Choose a Pal', formula: 'Normal breeding rule', formulaText: 'The two parent ranks become an intermediate value, then resolve to the closest eligible Pal rank. Special combinations override this rule.',
     direct: 'Exact recipe', nearby: 'Rank-near parent', unresolved: 'Unresolved source row',
     cards: 'Pals', noResult: 'No Pals match this filter.',
@@ -95,10 +97,26 @@ function parentRows(pal) {
   return [...direct, ...normal].slice(0, 6);
 }
 
-function candidateRows(pal) {
-  const direct = directParentRows(pal).flatMap((row) => [row.parentA, row.parentB]).filter(Boolean);
-  const rankNear = [...pals].sort((a, b) => Math.abs(a.breedingRank - pal.breedingRank) - Math.abs(b.breedingRank - pal.breedingRank)).filter((item) => item.id !== pal.id);
-  return [...new Map([...direct, ...rankNear].map((item) => [item.id, item])).values()].slice(0, 5);
+function outputRows(pal) {
+  return (outputs[pal.id]?.rows ?? []).map((row) => ({
+    ...row,
+    childPal: byId.get(row.child),
+    otherParent: byId.get(row.otherParent),
+  })).filter((row) => row.childPal && row.otherParent);
+}
+
+function outputCount(pal) {
+  return outputs[pal.id]?.total ?? 0;
+}
+
+function outputCard(pal, row) {
+  const pair = `${palName(row.otherParent)} + ${palName(pal)}`;
+  const label = row.kind === 'special'
+    ? `${pair} / ${t('direct')}`
+    : `${pair} / ${t('nearby')} Δ${row.delta}`;
+  return `<button class="output-card" data-select="${row.childPal.id}" data-drill="true" aria-label="${esc(palName(row.childPal))}">
+    ${imageMarkup(row.childPal, palName(row.childPal))}<span><strong>${esc(palName(row.childPal))}</strong><small>${esc(label)}</small></span><b>${row.childPal.breedingRank}</b>
+  </button>`;
 }
 
 function filteredPals() {
@@ -162,6 +180,8 @@ function render() {
   const filtered = filteredPals();
   const allElements = [...new Set(pals.flatMap((item) => item.elements))].sort();
   const uniqueSpecial = special.length;
+  const childRows = outputRows(pal);
+  const visibleChildRows = childRows.slice(0, 12);
   document.querySelector('#app').innerHTML = `<main class="shell">
     <header class="topbar"><a class="brand" href="#top"><span class="brand-glyph">✳</span><span>PAL ATLAS</span><small>BREEDING GRAPH</small></a><nav><a class="text-button" href="#atlas-view">${t('atlasLink')}</a><a class="text-button" href="#graph-view">${t('graphLink')}</a><button class="icon-button" data-lang-toggle="true">${state.lang === 'ja' ? 'EN' : '日'}</button><button class="icon-button" data-theme-toggle="true">${state.theme === 'dark' ? '☼' : '☾'}</button></nav></header>
     <section class="hero" id="top"><div class="hero-copy"><span class="eyebrow">${t('eyebrow')}</span><h1>${t('title')}</h1><p>${t('lead')}</p></div></section>
@@ -176,7 +196,7 @@ function render() {
         <div class="formula-card"><span class="micro-label">03 / ${t('formula')}</span><p>${t('formulaText')}</p><code>⌊ (A + B + 1) / 2 ⌋ → nearest</code></div>
       </aside>
     </section>
-    <section class="graph-section" id="graph-view">${graphView(pal)}<div class="candidate-panel"><div class="section-head"><div><span class="micro-label">04 / ${t('children')}</span><h2>${state.lang === 'ja' ? '関連パル' : 'Related Pals'}</h2></div></div><div class="candidate-grid">${candidateRows(pal).map((item) => card(item, true)).join('')}</div></div></section>
+    <section class="graph-section" id="graph-view">${graphView(pal)}<div class="candidate-panel output-panel"><div class="section-head"><div><span class="micro-label">04 / ${t('children')}</span><h2>${t('outputs')}</h2></div><span class="result-count">${visibleChildRows.length} / ${outputCount(pal)}</span></div><div class="output-grid">${visibleChildRows.length ? visibleChildRows.map((row) => outputCard(pal, row)).join('') : `<p class="muted">${t('unresolved')}</p>`}</div></div></section>
     <section class="source-section"><div><span class="micro-label">05 / ${t('sources')}</span><h2>${state.lang === 'ja' ? '出典を分けて保持する' : 'Keep provenance visible'}</h2></div><div class="source-list">${sourceData.sources.map((source) => `<a href="${source.url}" target="_blank" rel="noreferrer"><span>${esc(source.title)}</span><small>${esc(source.role)}</small><b>↗</b></a>`).join('')}</div></section>
     <footer><span>PAL ATLAS / independent fan project</span></footer>
   </main>`;

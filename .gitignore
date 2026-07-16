@@ -6,6 +6,8 @@ dist/
 # Generated snapshots: refresh with `npm run data`; do not commit large derived files.
 data/pals.json
 data/breeding.json
+data/children.json
+data/children-ui.json
 data/sources.json
 data/notes.json
 data/quality-notes.md

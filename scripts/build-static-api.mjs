@@ -4,6 +4,7 @@ const ROOT = new URL('..', import.meta.url).pathname;
 const PUBLIC_API = `${ROOT}/public/api`;
 const palsData = JSON.parse(await readFile(`${ROOT}/data/pals.json`, 'utf8'));
 const breedingData = JSON.parse(await readFile(`${ROOT}/data/breeding.json`, 'utf8'));
+const childrenData = JSON.parse(await readFile(`${ROOT}/data/children.json`, 'utf8'));
 const sourceData = JSON.parse(await readFile(`${ROOT}/data/sources.json`, 'utf8'));
 
 const writeJson = async (path, value) => {
@@ -51,6 +52,7 @@ for (const pal of pals) {
     recipes: {
       featuredNormal: breedingData.featuredNormal[pal.id] ?? [],
       special: specialByChild.get(pal.id) ?? [],
+      outputs: childrenData.outputs[pal.id] ?? [],
     },
   });
 }

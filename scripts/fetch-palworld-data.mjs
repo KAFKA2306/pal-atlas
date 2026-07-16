@@ -206,6 +206,27 @@ for (let i = 0; i < pals.length; i += 1) {
 }
 
 const palsById = new Map(pals.map((pal) => [pal.id, pal]));
+const childrenByParent = new Map(pals.map((pal) => [pal.id, new Map()]));
+const addChildOutput = (parentId, row) => {
+  const outputs = childrenByParent.get(parentId);
+  if (!outputs) return;
+  const key = `${parentId}::${row.child}`;
+  const existing = outputs.get(key);
+  if (!existing || row.kind === 'special' || (existing.kind !== 'special' && row.delta < existing.delta)) outputs.set(key, row);
+};
+for (const row of special) {
+  for (const [parent, other] of [[row.parentA, row.parentB], [row.parentB, row.parentA]]) {
+    addChildOutput(parent, { id: row.id, parent, otherParent: other, child: row.child, kind: 'special', specialKind: row.kind });
+  }
+}
+for (const row of normal) {
+  const child = palsById.get(row.child);
+  for (const [parent, other] of [[row.parentA, row.parentB], [row.parentB, row.parentA]]) {
+    addChildOutput(parent, { id: row.id, parent, otherParent: other, child: row.child, kind: 'normal', intermediatePower: row.intermediatePower, delta: Math.abs(row.intermediatePower - child.breedingRank), rule: row.rule });
+  }
+}
+const children = Object.fromEntries([...childrenByParent].map(([parent, rows]) => [parent, [...rows.values()].sort((a, b) => (a.kind === 'special' ? -1 : 1) - (b.kind === 'special' ? -1 : 1) || (a.delta ?? 0) - (b.delta ?? 0) || a.child.localeCompare(b.child) || a.id.localeCompare(b.id))]));
+const childrenUi = Object.fromEntries(Object.entries(children).map(([parent, rows]) => [parent, { total: rows.length, rows: rows.slice(0, 12) }]));
 const featuredNormal = Object.fromEntries([...normalByChild.entries()].map(([child, rows]) => [child, rows
   .sort((a, b) => Math.abs(a.intermediatePower - palsById.get(child).breedingRank) - Math.abs(b.intermediatePower - palsById.get(child).breedingRank) || a.parentA.localeCompare(b.parentA))
   .slice(0, 4)]));
@@ -225,6 +246,8 @@ await mkdir(DATA_DIR, { recursive: true });
 await mkdir(NEO4J_DIR, { recursive: true });
 await writeFile(`${DATA_DIR}/pals.json`, JSON.stringify({ meta, pals }, null, 2) + '\n');
 await writeFile(`${DATA_DIR}/breeding.json`, JSON.stringify({ meta, normal, special, featuredNormal, normalCount: normal.length }, null, 2) + '\n');
+await writeFile(`${DATA_DIR}/children.json`, JSON.stringify({ generatedAt: fetchedAt, outputs: children }, null, 2) + '\n');
+await writeFile(`${DATA_DIR}/children-ui.json`, JSON.stringify({ generatedAt: fetchedAt, outputs: childrenUi }, null, 2) + '\n');
 await writeFile(`${DATA_DIR}/sources.json`, JSON.stringify({ generatedAt: fetchedAt, sources }, null, 2) + '\n');
 
 const normalRows = normal.map((row) => ({ ...row, parentAName: palsById.get(row.parentA).nameEn, parentBName: palsById.get(row.parentB).nameEn, childName: palsById.get(row.child).nameEn }));

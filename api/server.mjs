@@ -25,8 +25,8 @@ function json(response, status, body) {
   response.end(JSON.stringify(body));
 }
 
-function limit(url) {
-  return Math.min(Math.max(Number(url.searchParams.get('limit') ?? 50) || 50, 1), 200);
+function limit(url, maximum = 200) {
+  return Math.min(Math.max(Number(url.searchParams.get('limit') ?? 50) || 50, 1), maximum);
 }
 
 async function route(request, response) {
@@ -64,6 +64,31 @@ async function route(request, response) {
         child.id AS child, child.nameEn AS childEn, child.nameJa AS childJa, child.breedingRank AS childRank
       ORDER BY CASE pair.kind WHEN 'special' THEN 0 ELSE 1 END, pair.intermediatePower, pair.id
       LIMIT $limit`, { id: recipeMatch[1], limit: limit(url) });
+    return json(response, 200, rows);
+  }
+
+  const outputMatch = url.pathname.match(/^\/api\/pals\/([^/]+)\/outputs$/);
+  if (outputMatch) {
+    const rows = await query(`
+      CALL {
+        MATCH (parent:Pal {id: $id})-[:PARENT_A]->(pair:BreedingPair)-[:PRODUCES]->(child:Pal)
+        MATCH (other:Pal)-[:PARENT_B]->(pair)
+        RETURN pair.id AS pairId, pair.kind AS kind, pair.specialKind AS specialKind, pair.intermediatePower AS intermediatePower, pair.rule AS rule,
+          parent.id AS parent, parent.nameEn AS parentEn, parent.nameJa AS parentJa,
+          other.id AS otherParent, other.nameEn AS otherParentEn, other.nameJa AS otherParentJa, other.breedingRank AS otherParentRank,
+          child.id AS child, child.nameEn AS childEn, child.nameJa AS childJa, child.breedingRank AS childRank
+        UNION
+        MATCH (parent:Pal {id: $id})-[:PARENT_B]->(pair:BreedingPair)-[:PRODUCES]->(child:Pal)
+        MATCH (other:Pal)-[:PARENT_A]->(pair)
+        WHERE parent.id <> other.id
+        RETURN pair.id AS pairId, pair.kind AS kind, pair.specialKind AS specialKind, pair.intermediatePower AS intermediatePower, pair.rule AS rule,
+          parent.id AS parent, parent.nameEn AS parentEn, parent.nameJa AS parentJa,
+          other.id AS otherParent, other.nameEn AS otherParentEn, other.nameJa AS otherParentJa, other.breedingRank AS otherParentRank,
+          child.id AS child, child.nameEn AS childEn, child.nameJa AS childJa, child.breedingRank AS childRank
+      }
+      RETURN pairId, kind, specialKind, intermediatePower, rule, parent, parentEn, parentJa, otherParent, otherParentEn, otherParentJa, otherParentRank, child, childEn, childJa, childRank
+      ORDER BY CASE kind WHEN 'special' THEN 0 ELSE 1 END, childRank, pairId
+      LIMIT $limit`, { id: outputMatch[1], limit: limit(url, 500) });
     return json(response, 200, rows);
   }
 

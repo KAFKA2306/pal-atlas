@@ -33,6 +33,7 @@ Neo4jを参照する最小APIです。`npm run api` で起動します。
 - `GET /api/pals?q=anubis&limit=20`
 - `GET /api/pals/:id`
 - `GET /api/pals/:id/recipes`
+- `GET /api/pals/:id/outputs`
 - `GET /api/breed?parentA=anubis&parentB=katress`
 - `GET /api/health`
 
