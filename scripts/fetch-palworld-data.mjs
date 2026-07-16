@@ -29,6 +29,7 @@ const sources = [
   { id: 'game8', title: 'Game8 — Breeding Combos Calculator', url: 'https://game8.co/games/Palworld/archives/440530', role: 'breeding workflow and special-combination cross-check' },
   { id: 'paldeck', title: 'Paldeck', url: 'https://www.paldeck.cc/breeding', role: 'independent database cross-check' },
   { id: 'official-news', title: 'Pocketpair official news', url: 'https://news.palworldgame.com/', role: 'official release and news context' },
+  { id: 'official-game', title: 'Pocketpair official Palworld site', url: 'https://www.pocketpair.jp/en/games-en/palworld-en/', role: 'official game and version context' },
   { id: 'official-docs', title: 'Pocketpair official server docs', url: 'https://docs.palworldgame.com/', role: 'official documentation entry point' },
 ];
 
@@ -137,6 +138,7 @@ const pals = english.map((pal) => {
     nameJa: ja?.name ?? pal.name,
     imageFile: pal.imageFile,
     imageUrl: pal.imageUrl,
+    imageOriginalUrl: pal.imageUrl,
     imageReferenceUrl: wikiIcons.get(pal.name).url,
     imageWebpUrl: webpUrl(wikiIcons.get(pal.name).url),
     imageMime: wikiIcons.get(pal.name).mime,
@@ -226,7 +228,7 @@ await writeFile(`${DATA_DIR}/breeding.json`, JSON.stringify({ meta, normal, spec
 await writeFile(`${DATA_DIR}/sources.json`, JSON.stringify({ generatedAt: fetchedAt, sources }, null, 2) + '\n');
 
 const normalRows = normal.map((row) => ({ ...row, parentAName: palsById.get(row.parentA).nameEn, parentBName: palsById.get(row.parentB).nameEn, childName: palsById.get(row.child).nameEn }));
-await writeFile(`${NEO4J_DIR}/pals.csv`, csv(pals.map((pal) => ({ ...pal, elements: pal.elements.join('|') })), ['id', 'order', 'nameEn', 'nameJa', 'imageFile', 'imageUrl', 'imageReferenceUrl', 'imageWebpUrl', 'imageMime', 'imageDelivery', 'elements', 'rarity', 'rarityTier', 'breedingRank', 'combiPriority', 'sourceIndex', 'ignoreCombi', 'sourceId']));
+await writeFile(`${NEO4J_DIR}/pals.csv`, csv(pals.map((pal) => ({ ...pal, elements: pal.elements.join('|') })), ['id', 'order', 'nameEn', 'nameJa', 'imageFile', 'imageUrl', 'imageOriginalUrl', 'imageReferenceUrl', 'imageWebpUrl', 'imageMime', 'imageDelivery', 'elements', 'rarity', 'rarityTier', 'breedingRank', 'combiPriority', 'sourceIndex', 'ignoreCombi', 'sourceId']));
 await writeFile(`${NEO4J_DIR}/breeding_edges.csv`, csv(normalRows, ['id', 'parentA', 'parentAName', 'parentB', 'parentBName', 'child', 'childName', 'intermediatePower', 'rule']));
 await writeFile(`${NEO4J_DIR}/special_edges.csv`, csv(special, ['id', 'child', 'childName', 'parentA', 'parentAName', 'parentB', 'parentBName', 'kind', 'status', 'sourceOwner']));
 await writeFile(`${NEO4J_DIR}/import.cypher`, `// Generated ${fetchedAt}
@@ -236,7 +238,7 @@ CREATE CONSTRAINT breeding_pair_id IF NOT EXISTS FOR (b:BreedingPair) REQUIRE b.
 LOAD CSV WITH HEADERS FROM 'file:///pals.csv' AS row
 MERGE (p:Pal {id: row.id})
 SET p.order = toInteger(row.order), p.nameEn = row.nameEn, p.nameJa = row.nameJa,
-    p.imageFile = row.imageFile, p.imageUrl = row.imageUrl, p.imageReferenceUrl = row.imageReferenceUrl, p.imageWebpUrl = row.imageWebpUrl, p.imageMime = row.imageMime, p.imageDelivery = row.imageDelivery, p.elements = split(row.elements, '|'),
+    p.imageFile = row.imageFile, p.imageUrl = row.imageUrl, p.imageOriginalUrl = row.imageOriginalUrl, p.imageReferenceUrl = row.imageReferenceUrl, p.imageWebpUrl = row.imageWebpUrl, p.imageMime = row.imageMime, p.imageDelivery = row.imageDelivery, p.elements = split(row.elements, '|'),
     p.rarity = toInteger(row.rarity), p.rarityTier = row.rarityTier, p.breedingRank = toInteger(row.breedingRank),
     p.combiPriority = toInteger(row.combiPriority), p.sourceIndex = toInteger(row.sourceIndex), p.ignoreCombi = row.ignoreCombi = 'true', p.sourceId = row.sourceId;
 

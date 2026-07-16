@@ -10,8 +10,8 @@ const writeJson = async (path, value) => {
   await writeFile(path, JSON.stringify(value) + '\n');
 };
 
-const pals = palsData.pals.map(({ id, order, nameEn, nameJa, imageUrl, imageReferenceUrl, imageWebpUrl, imageFile, imageMime, imageDelivery, elements, rarity, rarityTier, breedingRank, combiPriority, ignoreCombi }) => ({
-  id, order, nameEn, nameJa, imageUrl, imageReferenceUrl, imageWebpUrl, imageFile, imageMime, imageDelivery, elements, rarity, rarityTier, breedingRank, combiPriority, ignoreCombi,
+const pals = palsData.pals.map(({ id, order, nameEn, nameJa, imageUrl, imageOriginalUrl, imageReferenceUrl, imageWebpUrl, imageFile, imageMime, imageDelivery, elements, rarity, rarityTier, breedingRank, combiPriority, ignoreCombi }) => ({
+  id, order, nameEn, nameJa, imageUrl, imageOriginalUrl, imageReferenceUrl, imageWebpUrl, imageFile, imageMime, imageDelivery, elements, rarity, rarityTier, breedingRank, combiPriority, ignoreCombi,
 }));
 const palById = new Map(pals.map((pal) => [pal.id, pal]));
 const specialByChild = new Map();

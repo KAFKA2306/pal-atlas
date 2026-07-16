@@ -15,7 +15,7 @@ npm run data
 npm run dev
 ```
 
-`npm run data` は `palworld.gg` の英語/日本語 Paldeck と Palworld Wiki のアイコンAPIを取得し、正規化データと Neo4j 用 CSV/Cypher を生成します。生成スナップショットと CSV/Cypher は大容量のため Git 管理外です。画面は安定した元画像URLを使い、静的APIとNeo4jには `wsrv.nl` のWebP代替URLも残します。各サイトの許諾・規約に従って利用してください。
+`npm run data` は `palworld.gg` の英語/日本語 Paldeck と Palworld Wiki のアイコンAPIを取得し、正規化データと Neo4j 用 CSV/Cypher を生成します。生成スナップショットと CSV/Cypher は大容量のため Git 管理外です。画面は `wsrv.nl` のWebP URLを主経路にし、失敗時は元画像URLへ戻します。各サイトの許諾・規約に従って利用してください。
 
 Neo4j は `neo4j/compose.yml` の `pal-atlas-neo4j` 一つだけを正本として保持します。Pages の JSON はそのグラフを表示するための生成物で、別の永続データベースではありません。
 
@@ -50,6 +50,7 @@ Pages上の静的API（Neo4jを常駐公開しない軽量経路）:
 - [Game8 — Breeding Combos Calculator](https://game8.co/games/Palworld/archives/440530) — breeding workflow and special-combination cross-check
 - [Paldeck](https://www.paldeck.cc/breeding) — independent database cross-check
 - [Pocketpair official news](https://news.palworldgame.com/) — official release/news context
+- [Pocketpair official Palworld site](https://www.pocketpair.jp/en/games-en/palworld-en/) — official game/version context
 - [Pocketpair official server docs](https://docs.palworldgame.com/) — official documentation entry point
 
 ## GitHub Pages

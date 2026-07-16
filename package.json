@@ -5,9 +5,10 @@
   "type": "module",
   "scripts": {
     "data": "node scripts/fetch-palworld-data.mjs",
+    "verify:data": "node scripts/verify-data.mjs",
     "static-api": "node scripts/build-static-api.mjs",
     "api": "node api/server.mjs",
-    "dev": "vite",
+    "dev": "vite --force",
     "build": "npm run static-api && vite build",
     "preview": "vite preview"
   },
