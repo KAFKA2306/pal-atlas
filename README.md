@@ -17,14 +17,24 @@ npm run dev
 
 `npm run data` は `palworld.gg` の英語/日本語 Paldeck を取得し、正規化データと Neo4j 用 CSV/Cypher を生成します。生成スナップショットと CSV/Cypher は大容量のため Git 管理外です。画像は元サイトの URL を参照します。サイト運営者の許諾・規約に従って利用してください。
 
+Neo4j は `neo4j/compose.yml` の `pal-atlas-neo4j` 一つだけを正本として保持します。Pages の JSON はそのグラフを表示するための生成物で、別の永続データベースではありません。
+
 ## Data model
 
-- `Pal` — canonical name, Japanese name, elements, rarity, Breeding Rank, source image URL
-- `BREEDS_TO` — normal rank calculation result for every unordered parent pair, including self-pairs
-- `SPECIAL_BREEDING` — exact parent-pair overrides such as Faleris or elemental variants
-- `ACQUISITION_NOTE` — mutation, mission reward, or worker recommendation; not a breeding recipe
+- `Pal` — パル本体、配合値、通常配合対象外フラグ、画像URL
+- `BreedingPair` — `PARENT_A` + `PARENT_B` → `PRODUCES` を表す配合イベント
 
-通常配合は `floor((rankA + rankB + 1) / 2)` を中間値として、最も近い Pal に解決します。特殊配合はこの解決を上書きします。データの意味が混ざらないよう、`targetBreedingRank` と `intermediatePower` は別フィールドです。
+通常配合は `floor((rankA + rankB + 1) / 2)` から、通常配合対象のパルだけを最近傍選択します。取得元の `combos` は特殊配合として自動取り込みします。
+
+## API
+
+Neo4jを参照する最小APIです。`npm run api` で起動します。
+
+- `GET /api/pals?q=anubis&limit=20`
+- `GET /api/pals/:id`
+- `GET /api/pals/:id/recipes`
+- `GET /api/breed?parentA=anubis&parentB=katress`
+- `GET /api/health`
 
 ## Sources
 
@@ -34,7 +44,6 @@ npm run dev
 - [Paldeck](https://www.paldeck.cc/breeding) — independent database cross-check
 - [Pocketpair official news](https://news.palworldgame.com/) — official release/news context
 - [Pocketpair official server docs](https://docs.palworldgame.com/) — official documentation entry point
-- User-provided [deep research report](file:///mnt/d/temp/deep-research-report.md) — review notes and classification decisions; not bundled into the public build
 
 ## GitHub Pages
 

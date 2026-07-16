@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "data": "node scripts/fetch-palworld-data.mjs",
+    "api": "node api/server.mjs",
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview"

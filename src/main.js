@@ -14,7 +14,7 @@ const copy = {
     eyebrow: 'PAL ATLAS / BREEDING GRAPH',
     title: '親をたどると、配合の地図になる。',
     lead: 'パルを一体選ぶだけで、まず見るべき親候補と、その理由が静かに現れる。クリックを重ねるほど、配合値の距離と特殊配合の例外が読めるようになる。',
-    catalog: '図鑑', graph: 'グラフ', search: 'パルを検索', all: 'すべて', parents: '親候補', children: '子候補', special: '特殊配合', normal: '通常配合', select: '選択中', rank: '配合値', source: '出典', sources: 'データ出典', insight: '見えてくる知見',
+    catalog: '図鑑', graph: '配合グラフ', atlasLink: '図鑑へ', graphLink: '配合グラフへ', search: 'パルを検索', all: 'すべて', parents: '親候補', children: '関連パル', special: '特殊配合', normal: '通常配合', select: '選択中', rank: '配合値', source: '出典', sources: 'データ出典', insight: '見えてくる知見',
     choose: '図鑑から選ぶ', formula: '通常配合のルール', formulaText: '親2体の配合値から中間値を出し、最も近い配合値のパルへ着地します。特殊配合はこのルールを上書きします。',
     clickHint: '親候補をクリックして、次の知見へ', direct: '固有レシピ', nearby: '値が近い親', unresolved: '未解決の出典行',
     cards: 'パル標本', noResult: '該当するパルがありません。', viewNote: 'カードを押すとグラフの中心が移動します。',
@@ -23,7 +23,7 @@ const copy = {
     eyebrow: 'PAL ATLAS / BREEDING GRAPH',
     title: 'Trace the parents. Read the map.',
     lead: 'Choose one Pal and the useful parent signals surface first. Keep clicking: the rank distance, special overrides, and breeding logic become easier to see as a chain.',
-    catalog: 'Atlas', graph: 'Graph', search: 'Search Pals', all: 'All', parents: 'Parent signals', children: 'Child signals', special: 'Special', normal: 'Normal', select: 'Selected', rank: 'Breeding Rank', source: 'Source', sources: 'Sources', insight: 'What this reveals',
+    catalog: 'Atlas', graph: 'Breeding graph', atlasLink: 'Atlas', graphLink: 'Breeding graph', search: 'Search Pals', all: 'All', parents: 'Parent signals', children: 'Related Pals', special: 'Special', normal: 'Normal', select: 'Selected', rank: 'Breeding Rank', source: 'Source', sources: 'Sources', insight: 'What this reveals',
     choose: 'Choose from atlas', formula: 'Normal breeding rule', formulaText: 'The two parent ranks become an intermediate value, then resolve to the closest Pal rank. Special combinations override this rule.',
     clickHint: 'Click a parent to keep learning', direct: 'Exact recipe', nearby: 'Rank-near parent', unresolved: 'Unresolved source row',
     cards: 'Pal specimens', noResult: 'No Pals match this filter.', viewNote: 'Click a card to move the graph center.',
@@ -50,7 +50,6 @@ const state = {
   stack: [byId.has('anubis') ? 'anubis' : pals[0].id],
   search: '',
   element: 'all',
-  view: 'atlas',
 };
 
 const elementLabels = { neutral: ['無', 'Neutral'], fire: ['火', 'Fire'], water: ['水', 'Water'], grass: ['草', 'Grass'], electric: ['雷', 'Electric'], ground: ['地', 'Ground'], ice: ['氷', 'Ice'], dark: ['闇', 'Dark'], dragon: ['竜', 'Dragon'] };
@@ -114,30 +113,28 @@ function applyTheme() {
 }
 
 function card(pal, compact = false) {
-  return `<button class="pal-card ${compact ? 'compact' : ''} ${pal.id === state.selectedId ? 'is-selected' : ''}" data-select="${pal.id}" ${compact ? 'data-drill="true"' : ''} aria-label="${esc(palName(pal))}">
-    <span class="card-orbit"></span><img src="${pal.imageUrl}" alt="${esc(palName(pal))}" loading="lazy" />
+  return `<button class="pal-card ${compact ? 'compact' : ''} ${pal.id === selected().id ? 'is-selected' : ''}" data-select="${pal.id}" ${compact ? 'data-drill="true"' : ''} aria-label="${esc(palName(pal))}">
+    <img src="${pal.imageUrl}" alt="${esc(palName(pal))}" loading="lazy" />
     <span class="card-copy"><strong>${esc(palName(pal))}</strong><small>${esc(pal.nameEn === pal.nameJa ? pal.nameEn : state.lang === 'ja' ? pal.nameEn : pal.nameJa)}</small></span>
     <span class="card-rank">${pal.breedingRank}</span>
   </button>`;
 }
 
-function graphNode(pal, x, y, role) {
-  if (!pal) return '';
-  return `<g class="graph-node ${role}" data-select="${pal.id}" ${role === 'parent' ? 'data-drill="true"' : ''} tabindex="0" role="button" aria-label="${esc(palName(pal))}">
-    <circle cx="${x}" cy="${y}" r="40" class="node-halo"></circle><image href="${pal.imageUrl}" x="${x - 27}" y="${y - 27}" width="54" height="54" preserveAspectRatio="xMidYMid meet"></image>
-    <text x="${x}" y="${y + 61}" text-anchor="middle">${esc(palName(pal))}</text><text x="${x}" y="${y + 78}" text-anchor="middle" class="node-rank">${pal.breedingRank}</text>
-  </g>`;
+function recipePal(pal, role) {
+  if (!pal) return `<span class="recipe-pal missing">—</span>`;
+  const tag = role === 'target' ? 'span' : 'button';
+  const action = role === 'target' ? '' : ` data-select="${pal.id}" data-drill="true" aria-label="${esc(palName(pal))}"`;
+  return `<${tag} class="recipe-pal ${role}"${action}><img src="${pal.imageUrl}" alt="" loading="lazy" /><span><b>${esc(palName(pal))}</b><small>${t('rank')} ${pal.breedingRank}</small></span></${tag}>`;
 }
 
 function graphView(pal) {
   const rows = parentRows(pal).slice(0, 4);
-  const first = rows[0] ?? {};
-  const second = rows[1] ?? {};
-  const parents = [first.parentA, first.parentB, second.parentA, second.parentB].filter(Boolean).filter((item, index, list) => list.findIndex((candidate) => candidate.id === item.id) === index).slice(0, 4);
-  const points = [[130, 95], [130, 255], [350, 70], [350, 280]];
-  const lines = parents.map((parent, index) => `<line x1="${points[index][0]}" y1="${points[index][1]}" x2="600" y2="175" class="graph-line ${rows[index < 2 ? 0 : 1]?.kind === 'special' ? 'special-line' : ''}"></line>`).join('');
   return `<div class="graph-panel"><div class="graph-head"><div><span class="micro-label">${t('graph')}</span><h3>${esc(palName(pal))} <span>/ ${pal.breedingRank}</span></h3></div><span class="graph-hint">${t('clickHint')}</span></div>
-    <svg class="breeding-graph" viewBox="0 0 760 350" aria-label="${esc(palName(pal))} breeding graph"><defs><filter id="glow"><feGaussianBlur stdDeviation="5" result="coloredBlur"/><feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>${lines}${parents.map((parent, index) => graphNode(parent, points[index][0], points[index][1], 'parent')).join('')}${graphNode(pal, 600, 175, 'target')}<text x="130" y="28" class="lane-label">${t('parents')}</text><text x="600" y="285" class="lane-label" text-anchor="middle">${t('select')}</text></svg></div>`;
+    <div class="recipe-list breeding-graph" aria-label="${esc(palName(pal))} breeding recipes">${rows.length ? rows.map((row) => `<div class="recipe-row ${row.kind}">
+      ${recipePal(row.parentA, 'parent-a')}<span class="recipe-plus">＋</span>${recipePal(row.parentB, 'parent-b')}
+      <div class="recipe-rule"><b>${row.kind === 'special' ? t('direct') : t('normal')}</b><small>${row.kind === 'special' ? esc(row.label) : `${t('nearby')} / ${row.intermediatePower}`}</small></div>
+      <span class="recipe-arrow" aria-hidden="true">→</span>${recipePal(pal, 'target')}
+    </div>`).join('') : `<p class="muted">${t('unresolved')}</p>`}</div></div>`;
 }
 
 function insight(pal) {
@@ -155,20 +152,20 @@ function render() {
   const allElements = [...new Set(pals.flatMap((item) => item.elements))].sort();
   const uniqueSpecial = special.length;
   document.querySelector('#app').innerHTML = `<main class="shell">
-    <header class="topbar"><a class="brand" href="#top"><span class="brand-glyph">✳</span><span>PAL ATLAS</span><small>v1.0 / GRAPH VIEW</small></a><nav><button class="text-button ${state.view === 'atlas' ? 'active' : ''}" data-view="atlas">${t('catalog')}</button><button class="text-button ${state.view === 'graph' ? 'active' : ''}" data-view="graph">${t('graph')}</button><button class="icon-button" data-lang-toggle="true">${state.lang === 'ja' ? 'EN' : '日'}</button><button class="icon-button" data-theme-toggle="true">${state.theme === 'dark' ? '☼' : '☾'}</button></nav></header>
-    <section class="hero" id="top"><div class="hero-copy"><span class="eyebrow">${t('eyebrow')}</span><h1>${t('title')}</h1><p>${t('lead')}</p></div><div class="hero-stamp"><span>CATALOG</span><strong>${String(palData.meta.catalogCount).padStart(3, '0')}</strong><small>${state.lang === 'ja' ? 'パル indexed' : 'Pals indexed'}</small></div></section>
+    <header class="topbar"><a class="brand" href="#top"><span class="brand-glyph">✳</span><span>PAL ATLAS</span><small>BREEDING GRAPH</small></a><nav><a class="text-button" href="#atlas-view">${t('atlasLink')}</a><a class="text-button" href="#graph-view">${t('graphLink')}</a><button class="icon-button" data-lang-toggle="true">${state.lang === 'ja' ? 'EN' : '日'}</button><button class="icon-button" data-theme-toggle="true">${state.theme === 'dark' ? '☼' : '☾'}</button></nav></header>
+    <section class="hero" id="top"><div class="hero-copy"><span class="eyebrow">${t('eyebrow')}</span><h1>${t('title')}</h1><p>${t('lead')}</p></div></section>
     <section class="metric-row"><div><b>${palData.meta.catalogCount}</b><span>${t('catalog')}</span></div><div><b>${palData.meta.normalPairCount.toLocaleString()}</b><span>${t('normal')} edges</span></div><div><b>${uniqueSpecial}</b><span>${t('special')} edges</span></div></section>
-    <section class="workspace ${state.view === 'graph' ? 'graph-only' : ''}" id="atlas-view">
+    <section class="workspace" id="atlas-view">
       <div class="main-column"><div class="section-head"><div><span class="micro-label">01 / ${t('choose')}</span><h2>${t('cards')}</h2></div><span class="result-count">${filtered.length} / ${pals.length}</span></div>
         <div class="controls"><label class="search-box"><span>⌕</span><input data-search type="search" value="${esc(state.search)}" placeholder="${t('search')}" /></label><select data-element aria-label="${t('all')}"><option value="all">${t('all')} elements</option>${allElements.map((element) => `<option value="${element}" ${state.element === element ? 'selected' : ''}>${elText(element)}</option>`).join('')}</select><span class="control-note">${t('viewNote')}</span></div>
         <div class="atlas-grid">${catalogMarkup(filtered)}</div>
       </div>
-      <aside class="detail-column"><div class="detail-card"><div class="detail-kicker"><span>02 / ${t('select')}</span><span class="status-dot"></span></div><div class="trail"><button data-back ${state.stack.length > 1 ? '' : 'disabled'}>←</button><span>${state.stack.map((id) => esc(palName(byId.get(id)))).join(' <i>→</i> ')}</span></div><div class="selected-portrait"><div class="portrait-ring"></div><img src="${pal.imageUrl}" alt="${esc(palName(pal))}" /></div><div class="selected-title"><span class="micro-label">#${String(pal.order).padStart(3, '0')} / ${pal.rarityTier}</span><h2>${esc(palName(pal))}</h2><p>${pal.nameEn === pal.nameJa ? '' : esc(state.lang === 'ja' ? pal.nameEn : pal.nameJa)}</p></div><div class="tag-row">${pal.elements.map((element) => `<span class="tag element-${element}">${elText(element)}</span>`).join('')}<span class="tag rank-tag">${t('rank')} ${pal.breedingRank}</span></div>
-        <div class="divider"></div><div class="detail-label">${t('insight')}</div>${insight(pal)}<div class="detail-label">${t('parents')}</div><div class="parent-list">${parentRows(pal).slice(0, 4).map((row) => `<button class="parent-row" data-select="${row.parentA?.id}" data-drill="true" ${row.kind === 'special' ? 'data-special="true"' : ''}><span class="pair-images">${row.parentA ? `<img src="${row.parentA.imageUrl}" alt="" />` : ''}${row.parentB ? `<img src="${row.parentB.imageUrl}" alt="" />` : ''}</span><span><b>${row.parentA ? esc(palName(row.parentA)) : '—'} + ${row.parentB ? esc(palName(row.parentB)) : '—'}</b><small>${row.kind === 'special' ? t('direct') : `${t('nearby')} / ${row.intermediatePower}`}</small></span><span class="arrow">→</span></button>`).join('') || `<p class="muted">${t('unresolved')}</p>`}</div></div>
+      <aside class="detail-column"><div class="detail-card"><div class="detail-kicker"><span>02 / ${t('select')}</span><span class="status-dot"></span></div><div class="trail"><button data-back ${state.stack.length > 1 ? '' : 'disabled'}>←</button><span>${state.stack.map((id) => esc(palName(byId.get(id)))).join(' <i>→</i> ')}</span></div><div class="selected-portrait"><img src="${pal.imageUrl}" alt="${esc(palName(pal))}" /></div><div class="selected-title"><span class="micro-label">#${String(pal.order).padStart(3, '0')} / ${pal.rarityTier}</span><h2>${esc(palName(pal))}</h2><p>${pal.nameEn === pal.nameJa ? '' : esc(state.lang === 'ja' ? pal.nameEn : pal.nameJa)}</p></div><div class="tag-row">${pal.elements.map((element) => `<span class="tag element-${element}">${elText(element)}</span>`).join('')}<span class="tag rank-tag">${t('rank')} ${pal.breedingRank}</span></div>
+        <div class="divider"></div><div class="detail-label">${t('insight')}</div>${insight(pal)}<div class="detail-label">${t('parents')}</div><div class="parent-list">${parentRows(pal).slice(0, 4).map((row) => `<div class="parent-row ${row.kind}"><span class="pair-images">${row.parentA ? `<button data-select="${row.parentA.id}" data-drill="true" aria-label="${esc(palName(row.parentA))}"><img src="${row.parentA.imageUrl}" alt="" /></button>` : ''}${row.parentB ? `<button data-select="${row.parentB.id}" data-drill="true" aria-label="${esc(palName(row.parentB))}"><img src="${row.parentB.imageUrl}" alt="" /></button>` : ''}</span><span><b>${row.parentA ? esc(palName(row.parentA)) : '—'} + ${row.parentB ? esc(palName(row.parentB)) : '—'}</b><small>${row.kind === 'special' ? t('direct') : `${t('nearby')} / ${row.intermediatePower}`}</small></span><span class="arrow">→</span></div>`).join('') || `<p class="muted">${t('unresolved')}</p>`}</div></div>
         <div class="formula-card"><span class="micro-label">03 / ${t('formula')}</span><p>${t('formulaText')}</p><code>⌊ (A + B + 1) / 2 ⌋ → nearest</code></div>
       </aside>
     </section>
-    <section class="graph-section" id="graph-view">${graphView(pal)}<div class="candidate-panel"><div class="section-head"><div><span class="micro-label">04 / ${t('children')}</span><h2>${state.lang === 'ja' ? '次に見る候補' : 'Keep exploring'}</h2></div></div><p class="candidate-lead">${state.lang === 'ja' ? '選択中の値に近いパルをクリックすると、別の親候補の見え方に切り替わります。' : 'Click a nearby Pal to change the center and reveal a new parent signal.'}</p><div class="candidate-grid">${candidateRows(pal).map((item) => card(item, true)).join('')}</div></div></section>
+    <section class="graph-section" id="graph-view">${graphView(pal)}<div class="candidate-panel"><div class="section-head"><div><span class="micro-label">04 / ${t('children')}</span><h2>${state.lang === 'ja' ? '次に見る関連パル' : 'Related Pals'}</h2></div></div><p class="candidate-lead">${state.lang === 'ja' ? '値の近いパルをクリックすると、次の配合イベントへ移動します。' : 'Click a nearby Pal to move to the next breeding event.'}</p><div class="candidate-grid">${candidateRows(pal).map((item) => card(item, true)).join('')}</div></div></section>
     <section class="source-section"><div><span class="micro-label">05 / ${t('sources')}</span><h2>${state.lang === 'ja' ? '出典を分けて保持する' : 'Keep provenance visible'}</h2></div><div class="source-list">${sourceData.sources.map((source) => `<a href="${source.url}" target="_blank" rel="noreferrer"><span>${esc(source.title)}</span><small>${esc(source.role)}</small><b>↗</b></a>`).join('')}</div></section>
     <footer><span>PAL ATLAS / independent fan project</span><span>${state.lang === 'ja' ? 'データは生成時点の出典ハッシュを保持' : 'Generated data keeps a source hash'}</span></footer>
   </main>`;
@@ -180,14 +177,13 @@ function bind() {
   if (!app || appBound) return;
   appBound = true;
   app.addEventListener('click', (event) => {
-    const target = event.target.closest('[data-select], [data-back], [data-view], [data-lang-toggle], [data-theme-toggle]');
+    const target = event.target.closest('[data-select], [data-back], [data-lang-toggle], [data-theme-toggle]');
     if (!target || !app.contains(target)) return;
     if (target.dataset.select) {
       const id = target.dataset.select;
       if (!byId.has(id)) return;
       state.selectedId = id;
       state.stack = target.dataset.drill === 'true' ? [...state.stack, id] : [id];
-      state.view = 'graph';
       render();
       requestAnimationFrame(() => document.querySelector('#graph-view')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
       return;
@@ -198,12 +194,6 @@ function bind() {
         state.selectedId = state.stack.at(-1);
         render();
       }
-      return;
-    }
-    if (target.dataset.view) {
-      state.view = target.dataset.view;
-      document.querySelectorAll('[data-view]').forEach((button) => button.classList.toggle('active', button.dataset.view === state.view));
-      document.querySelector(`#${state.view === 'graph' ? 'graph-view' : 'atlas-view'}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       return;
     }
     if (target.dataset.langToggle !== undefined) {

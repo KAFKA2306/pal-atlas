@@ -15,13 +15,13 @@ with sync_playwright() as p:
     print("loaded", flush=True)
 
     results = {"cards": page.locator(".pal-card").count(), "first_rank": page.locator(".pal-card .card-rank").first.inner_text()}
-    page.locator('[data-view="graph"]').click()
+    page.locator('a[href="#graph-view"]').click()
     print("view graph", flush=True)
-    results["graph_active"] = page.locator('[data-view="graph"].active').count()
+    results["graph_anchor"] = page.locator('a[href="#graph-view"]').count()
     results["graph_panel_visible"] = page.locator(".graph-panel").is_visible()
-    page.locator('[data-view="atlas"]').click()
+    page.locator('a[href="#atlas-view"]').click()
     print("view atlas", flush=True)
-    results["atlas_active"] = page.locator('[data-view="atlas"].active').count()
+    results["atlas_anchor"] = page.locator('a[href="#atlas-view"]').count()
 
     search = page.locator("[data-search]")
     search.fill("Anubis")
