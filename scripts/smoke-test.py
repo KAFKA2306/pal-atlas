@@ -1,3 +1,4 @@
+import os
 from playwright.sync_api import sync_playwright
 
 errors = []
@@ -5,7 +6,7 @@ with sync_playwright() as p:
     browser = p.chromium.launch(headless=True)
     page = browser.new_page(viewport={"width": 1440, "height": 1000})
     page.on("console", lambda message: errors.append(message.text) if message.type == "error" else None)
-    page.goto("http://127.0.0.1:5173", wait_until="networkidle")
+    page.goto(os.environ.get("PAL_ATLAS_URL", "http://127.0.0.1:5173"), wait_until="networkidle")
     assert page.locator(".pal-card").count() >= 297, "catalog cards did not render"
     assert page.locator(".breeding-graph").count() == 1, "graph did not render"
     before = page.locator(".trail span").inner_text()
