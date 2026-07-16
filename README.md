@@ -33,7 +33,7 @@ npm run dev
 
 ## GitHub Pages
 
-`.github/workflows/deploy-pages.yml` builds this static Vite site and deploys `dist/` to GitHub Pages. Set Pages source to **GitHub Actions** once the repository is pushed.
+`.github/workflows/deploy-pages.yml` builds the committed data snapshot and deploys `dist/` to GitHub Pages. Set Pages source to **GitHub Actions** once the repository is pushed. Run `npm run data` intentionally when refreshing the external snapshot; this keeps a Pages deploy reproducible even if a source page changes or is unavailable.
 
 ## Notice
 
