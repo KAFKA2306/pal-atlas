@@ -2,6 +2,11 @@
 
 Palworld 1.0 のパル図鑑、Breeding Rank、特殊配合、通常配合計算を一つのグラフとして扱う独立サイトです。
 
+## Published site
+
+- GitHub Pages: [https://kafka2306.github.io/pal-atlas/](https://kafka2306.github.io/pal-atlas/)
+- Repository: [github.com/KAFKA2306/pal-atlas](https://github.com/KAFKA2306/pal-atlas)
+
 ## Local
 
 ```bash
@@ -33,7 +38,7 @@ npm run dev
 
 ## GitHub Pages
 
-`.github/workflows/deploy-pages.yml` builds the committed data snapshot and deploys `dist/` to GitHub Pages. Set Pages source to **GitHub Actions** once the repository is pushed. Run `npm run data` intentionally when refreshing the external snapshot; this keeps a Pages deploy reproducible even if a source page changes or is unavailable.
+`.github/workflows/deploy-pages.yml` builds the committed data snapshot and deploys `dist/` to [GitHub Pages](https://kafka2306.github.io/pal-atlas/). Set Pages source to **GitHub Actions** in repository settings if it is not enabled yet. Run `npm run data` intentionally when refreshing the external snapshot; this keeps a Pages deploy reproducible even if a source page changes or is unavailable.
 
 ## Notice
 
