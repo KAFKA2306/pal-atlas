@@ -8,6 +8,7 @@ const DATA_DIR = `${ROOT}/data`;
 const NEO4J_DIR = `${ROOT}/neo4j`;
 const EN_URL = 'https://palworld.gg/breeding-calculator';
 const JA_URL = 'https://palworld.gg/ja/breeding-calculator';
+const WIKI_API = 'https://palworld.wiki.gg/api.php';
 const fetchedAt = new Date().toISOString();
 
 const ELEMENTS = new Map([
@@ -21,8 +22,10 @@ const ELEMENTS = new Map([
 ]);
 
 const sources = [
-  { id: 'palworld-gg', title: 'Palworld.gg Paldeck / Breeding Calculator', url: EN_URL, role: '297-entry catalog, Breeding Rank, image URL baseline' },
+  { id: 'palworld-gg', title: 'Palworld.gg Paldeck / Breeding Calculator', url: EN_URL, role: '297-entry catalog and Breeding Rank' },
   { id: 'palworld-wiki', title: 'Palworld Wiki — Breeding', url: 'https://palworld.wiki.gg/wiki/Breeding', role: 'normal formula and special-combination rule cross-check' },
+  { id: 'palworld-wiki-images', title: 'Palworld Wiki — Pal icon files', url: 'https://palworld.wiki.gg/wiki/Template:Icon', role: '297 verified external icon URLs' },
+  { id: 'webp-proxy', title: 'wsrv.nl image optimizer', url: 'https://images.weserv.nl/', role: 'external WebP delivery URL generated from each source image' },
   { id: 'game8', title: 'Game8 — Breeding Combos Calculator', url: 'https://game8.co/games/Palworld/archives/440530', role: 'breeding workflow and special-combination cross-check' },
   { id: 'paldeck', title: 'Paldeck', url: 'https://www.paldeck.cc/breeding', role: 'independent database cross-check' },
   { id: 'official-news', title: 'Pocketpair official news', url: 'https://news.palworldgame.com/', role: 'official release and news context' },
@@ -76,9 +79,39 @@ async function loadSourcePals(html) {
   }
 }
 
+async function loadWikiIconUrls(pals) {
+  const result = new Map();
+  for (let index = 0; index < pals.length; index += 20) {
+    const titles = pals.slice(index, index + 20).map((pal) => `File:${pal.name} icon.png`).join('|');
+    const url = `${WIKI_API}?action=query&format=json&titles=${encodeURIComponent(titles)}&prop=imageinfo&iiprop=url|mime`;
+    let response;
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      response = await fetch(url, { headers: { 'User-Agent': 'pal-atlas-data-builder/0.1' } });
+      if (response.status !== 429 || attempt === 2) break;
+      await new Promise((resolve) => setTimeout(resolve, 1000 * (attempt + 1)));
+    }
+    if (!response.ok) throw new Error(`Palworld Wiki image API failed: ${response.status}`);
+    const payload = await response.json();
+    for (const page of Object.values(payload.query?.pages ?? {})) {
+      const image = page.imageinfo?.[0];
+      if (!image?.url) continue;
+      const name = page.title.replace(/^File:/, '').replace(/ icon\.png$/i, '');
+      result.set(name, { url: image.url, mime: image.mime });
+    }
+    await new Promise((resolve) => setTimeout(resolve, 150));
+  }
+  const missing = pals.filter((pal) => !result.has(pal.name));
+  if (missing.length) throw new Error(`Palworld Wiki icon data missing for ${missing.length} pals: ${missing.map((pal) => pal.name).join(', ')}`);
+  return result;
+}
+
 function csv(rows, columns) {
   const quote = (value) => `"${String(value ?? '').replaceAll('"', '""')}"`;
   return [columns.join(','), ...rows.map((row) => columns.map((column) => quote(row[column])).join(','))].join('\n') + '\n';
+}
+
+function webpUrl(sourceUrl) {
+  return `https://images.weserv.nl/?url=${encodeURIComponent(sourceUrl)}&output=webp&w=512&h=512&fit=contain`;
 }
 
 const [enResponse, jaResponse] = await Promise.all([fetch(EN_URL), fetch(JA_URL)]);
@@ -89,6 +122,7 @@ const japanese = parsePage(jaHtml);
 const sourcePals = await loadSourcePals(enHtml);
 if (english.length < 250 || japanese.length < 250) throw new Error(`Unexpected catalog size: ${english.length}/${japanese.length}`);
 if (sourcePals.length < 250) throw new Error(`Unexpected source data size: ${sourcePals.length}`);
+const wikiIcons = await loadWikiIconUrls(english);
 
 const jaByImage = new Map(japanese.map((pal) => [pal.imageFile, pal]));
 const sourceBySlug = new Map(sourcePals.map((pal) => [pal.slug.trim(), pal]));
@@ -103,6 +137,10 @@ const pals = english.map((pal) => {
     nameJa: ja?.name ?? pal.name,
     imageFile: pal.imageFile,
     imageUrl: pal.imageUrl,
+    imageReferenceUrl: wikiIcons.get(pal.name).url,
+    imageWebpUrl: webpUrl(wikiIcons.get(pal.name).url),
+    imageMime: wikiIcons.get(pal.name).mime,
+    imageDelivery: 'webp-proxy',
     elements: pal.elements,
     rarity: pal.rarity,
     rarityTier: pal.rarityTier,
@@ -184,11 +222,11 @@ const meta = {
 await mkdir(DATA_DIR, { recursive: true });
 await mkdir(NEO4J_DIR, { recursive: true });
 await writeFile(`${DATA_DIR}/pals.json`, JSON.stringify({ meta, pals }, null, 2) + '\n');
-await writeFile(`${DATA_DIR}/breeding.json`, JSON.stringify({ meta, special, featuredNormal, normalCount: normal.length }, null, 2) + '\n');
+await writeFile(`${DATA_DIR}/breeding.json`, JSON.stringify({ meta, normal, special, featuredNormal, normalCount: normal.length }, null, 2) + '\n');
 await writeFile(`${DATA_DIR}/sources.json`, JSON.stringify({ generatedAt: fetchedAt, sources }, null, 2) + '\n');
 
 const normalRows = normal.map((row) => ({ ...row, parentAName: palsById.get(row.parentA).nameEn, parentBName: palsById.get(row.parentB).nameEn, childName: palsById.get(row.child).nameEn }));
-await writeFile(`${NEO4J_DIR}/pals.csv`, csv(pals.map((pal) => ({ ...pal, elements: pal.elements.join('|') })), ['id', 'order', 'nameEn', 'nameJa', 'imageFile', 'imageUrl', 'elements', 'rarity', 'rarityTier', 'breedingRank', 'combiPriority', 'sourceIndex', 'ignoreCombi', 'sourceId']));
+await writeFile(`${NEO4J_DIR}/pals.csv`, csv(pals.map((pal) => ({ ...pal, elements: pal.elements.join('|') })), ['id', 'order', 'nameEn', 'nameJa', 'imageFile', 'imageUrl', 'imageReferenceUrl', 'imageWebpUrl', 'imageMime', 'imageDelivery', 'elements', 'rarity', 'rarityTier', 'breedingRank', 'combiPriority', 'sourceIndex', 'ignoreCombi', 'sourceId']));
 await writeFile(`${NEO4J_DIR}/breeding_edges.csv`, csv(normalRows, ['id', 'parentA', 'parentAName', 'parentB', 'parentBName', 'child', 'childName', 'intermediatePower', 'rule']));
 await writeFile(`${NEO4J_DIR}/special_edges.csv`, csv(special, ['id', 'child', 'childName', 'parentA', 'parentAName', 'parentB', 'parentBName', 'kind', 'status', 'sourceOwner']));
 await writeFile(`${NEO4J_DIR}/import.cypher`, `// Generated ${fetchedAt}
@@ -198,7 +236,7 @@ CREATE CONSTRAINT breeding_pair_id IF NOT EXISTS FOR (b:BreedingPair) REQUIRE b.
 LOAD CSV WITH HEADERS FROM 'file:///pals.csv' AS row
 MERGE (p:Pal {id: row.id})
 SET p.order = toInteger(row.order), p.nameEn = row.nameEn, p.nameJa = row.nameJa,
-    p.imageFile = row.imageFile, p.imageUrl = row.imageUrl, p.elements = split(row.elements, '|'),
+    p.imageFile = row.imageFile, p.imageUrl = row.imageUrl, p.imageReferenceUrl = row.imageReferenceUrl, p.imageWebpUrl = row.imageWebpUrl, p.imageMime = row.imageMime, p.imageDelivery = row.imageDelivery, p.elements = split(row.elements, '|'),
     p.rarity = toInteger(row.rarity), p.rarityTier = row.rarityTier, p.breedingRank = toInteger(row.breedingRank),
     p.combiPriority = toInteger(row.combiPriority), p.sourceIndex = toInteger(row.sourceIndex), p.ignoreCombi = row.ignoreCombi = 'true', p.sourceId = row.sourceId;
 

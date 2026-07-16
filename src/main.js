@@ -66,6 +66,10 @@ function palName(pal) {
   return state.lang === 'ja' ? pal.nameJa : pal.nameEn;
 }
 
+function imageUrl(pal) {
+  return pal.imageUrl;
+}
+
 function directParentRows(pal) {
   return special.filter((row) => row.child === pal.id).map((row) => ({
     kind: 'special', parentA: byId.get(row.parentA), parentB: byId.get(row.parentB), label: row.kind,
@@ -114,7 +118,7 @@ function applyTheme() {
 
 function card(pal, compact = false) {
   return `<button class="pal-card ${compact ? 'compact' : ''} ${pal.id === selected().id ? 'is-selected' : ''}" data-select="${pal.id}" ${compact ? 'data-drill="true"' : ''} aria-label="${esc(palName(pal))}">
-    <img src="${pal.imageUrl}" alt="${esc(palName(pal))}" loading="lazy" />
+    <img src="${imageUrl(pal)}" alt="${esc(palName(pal))}" loading="lazy" />
     <span class="card-copy"><strong>${esc(palName(pal))}</strong><small>${esc(pal.nameEn === pal.nameJa ? pal.nameEn : state.lang === 'ja' ? pal.nameEn : pal.nameJa)}</small></span>
     <span class="card-rank">${pal.breedingRank}</span>
   </button>`;
@@ -124,7 +128,7 @@ function recipePal(pal, role) {
   if (!pal) return `<span class="recipe-pal missing">—</span>`;
   const tag = role === 'target' ? 'span' : 'button';
   const action = role === 'target' ? '' : ` data-select="${pal.id}" data-drill="true" aria-label="${esc(palName(pal))}"`;
-  return `<${tag} class="recipe-pal ${role}"${action}><img src="${pal.imageUrl}" alt="" loading="lazy" /><span><b>${esc(palName(pal))}</b><small>${t('rank')} ${pal.breedingRank}</small></span></${tag}>`;
+  return `<${tag} class="recipe-pal ${role}"${action}><img src="${imageUrl(pal)}" alt="" loading="lazy" /><span><b>${esc(palName(pal))}</b><small>${t('rank')} ${pal.breedingRank}</small></span></${tag}>`;
 }
 
 function graphView(pal) {
@@ -160,8 +164,8 @@ function render() {
         <div class="controls"><label class="search-box"><span>⌕</span><input data-search type="search" value="${esc(state.search)}" placeholder="${t('search')}" /></label><select data-element aria-label="${t('all')}"><option value="all">${t('all')} elements</option>${allElements.map((element) => `<option value="${element}" ${state.element === element ? 'selected' : ''}>${elText(element)}</option>`).join('')}</select></div>
         <div class="atlas-grid">${catalogMarkup(filtered)}</div>
       </div>
-      <aside class="detail-column"><div class="detail-card"><div class="trail"><button data-back ${state.stack.length > 1 ? '' : 'disabled'}>←</button><span>${state.stack.map((id) => esc(palName(byId.get(id)))).join(' <i>→</i> ')}</span></div><div class="selected-portrait"><img src="${pal.imageUrl}" alt="${esc(palName(pal))}" /></div><div class="selected-title"><span class="micro-label">#${String(pal.order).padStart(3, '0')} / ${pal.rarityTier}</span><h2>${esc(palName(pal))}</h2><p>${pal.nameEn === pal.nameJa ? '' : esc(state.lang === 'ja' ? pal.nameEn : pal.nameJa)}</p></div><div class="tag-row">${pal.elements.map((element) => `<span class="tag element-${element}">${elText(element)}</span>`).join('')}<span class="tag rank-tag">${t('rank')} ${pal.breedingRank}</span></div>
-        <div class="divider"></div><div class="detail-label">${t('insight')}</div>${insight(pal)}<div class="detail-label">${t('parents')}</div><div class="parent-list">${parentRows(pal).slice(0, 4).map((row) => `<div class="parent-row ${row.kind}"><span class="pair-images">${row.parentA ? `<button data-select="${row.parentA.id}" data-drill="true" aria-label="${esc(palName(row.parentA))}"><img src="${row.parentA.imageUrl}" alt="" /></button>` : ''}${row.parentB ? `<button data-select="${row.parentB.id}" data-drill="true" aria-label="${esc(palName(row.parentB))}"><img src="${row.parentB.imageUrl}" alt="" /></button>` : ''}</span><span><b>${row.parentA ? esc(palName(row.parentA)) : '—'} + ${row.parentB ? esc(palName(row.parentB)) : '—'}</b><small>${row.kind === 'special' ? t('direct') : `${t('nearby')} / ${row.intermediatePower}`}</small></span><span class="arrow">→</span></div>`).join('') || `<p class="muted">${t('unresolved')}</p>`}</div></div>
+      <aside class="detail-column"><div class="detail-card"><div class="trail"><button data-back ${state.stack.length > 1 ? '' : 'disabled'}>←</button><span>${state.stack.map((id) => esc(palName(byId.get(id)))).join(' <i>→</i> ')}</span></div><div class="selected-portrait"><img src="${imageUrl(pal)}" alt="${esc(palName(pal))}" /></div><div class="selected-title"><span class="micro-label">#${String(pal.order).padStart(3, '0')} / ${pal.rarityTier}</span><h2>${esc(palName(pal))}</h2><p>${pal.nameEn === pal.nameJa ? '' : esc(state.lang === 'ja' ? pal.nameEn : pal.nameJa)}</p></div><div class="tag-row">${pal.elements.map((element) => `<span class="tag element-${element}">${elText(element)}</span>`).join('')}<span class="tag rank-tag">${t('rank')} ${pal.breedingRank}</span></div>
+        <div class="divider"></div><div class="detail-label">${t('insight')}</div>${insight(pal)}<div class="detail-label">${t('parents')}</div><div class="parent-list">${parentRows(pal).slice(0, 4).map((row) => `<div class="parent-row ${row.kind}"><span class="pair-images">${row.parentA ? `<button data-select="${row.parentA.id}" data-drill="true" aria-label="${esc(palName(row.parentA))}"><img src="${imageUrl(row.parentA)}" alt="" /></button>` : ''}${row.parentB ? `<button data-select="${row.parentB.id}" data-drill="true" aria-label="${esc(palName(row.parentB))}"><img src="${imageUrl(row.parentB)}" alt="" /></button>` : ''}</span><span><b>${row.parentA ? esc(palName(row.parentA)) : '—'} + ${row.parentB ? esc(palName(row.parentB)) : '—'}</b><small>${row.kind === 'special' ? t('direct') : `${t('nearby')} / ${row.intermediatePower}`}</small></span><span class="arrow">→</span></div>`).join('') || `<p class="muted">${t('unresolved')}</p>`}</div></div>
         <div class="formula-card"><span class="micro-label">03 / ${t('formula')}</span><p>${t('formulaText')}</p><code>⌊ (A + B + 1) / 2 ⌋ → nearest</code></div>
       </aside>
     </section>

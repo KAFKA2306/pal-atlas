@@ -46,7 +46,7 @@ async function route(request, response) {
       MATCH (p:Pal)
       WHERE ($q = '' OR toLower(p.nameEn) CONTAINS toLower($q) OR toLower(p.nameJa) CONTAINS toLower($q))
         AND ($element = '' OR $element IN p.elements)
-      RETURN p.id AS id, p.nameEn AS nameEn, p.nameJa AS nameJa, p.elements AS elements, p.breedingRank AS breedingRank, p.imageUrl AS imageUrl
+      RETURN p.id AS id, p.nameEn AS nameEn, p.nameJa AS nameJa, p.elements AS elements, p.breedingRank AS breedingRank, p.imageUrl AS imageUrl, p.imageReferenceUrl AS imageReferenceUrl, p.imageWebpUrl AS imageWebpUrl, p.imageMime AS imageMime, p.imageDelivery AS imageDelivery
       ORDER BY p.breedingRank, p.sourceIndex, p.order
       LIMIT $limit`, { q, element, limit: limit(url) });
     return json(response, 200, rows);
@@ -71,7 +71,7 @@ async function route(request, response) {
   if (palMatch) {
     const rows = await query(`
       MATCH (p:Pal {id: $id})
-      RETURN p.id AS id, p.nameEn AS nameEn, p.nameJa AS nameJa, p.elements AS elements, p.rarity AS rarity, p.rarityTier AS rarityTier, p.breedingRank AS breedingRank, p.imageUrl AS imageUrl, p.ignoreCombi AS ignoreCombi`, { id: palMatch[1] });
+      RETURN p.id AS id, p.nameEn AS nameEn, p.nameJa AS nameJa, p.elements AS elements, p.rarity AS rarity, p.rarityTier AS rarityTier, p.breedingRank AS breedingRank, p.imageUrl AS imageUrl, p.imageReferenceUrl AS imageReferenceUrl, p.imageWebpUrl AS imageWebpUrl, p.imageMime AS imageMime, p.imageDelivery AS imageDelivery, p.ignoreCombi AS ignoreCombi`, { id: palMatch[1] });
     return rows[0] ? json(response, 200, rows[0]) : json(response, 404, { error: 'pal_not_found' });
   }
 

@@ -15,7 +15,7 @@ npm run data
 npm run dev
 ```
 
-`npm run data` は `palworld.gg` の英語/日本語 Paldeck を取得し、正規化データと Neo4j 用 CSV/Cypher を生成します。生成スナップショットと CSV/Cypher は大容量のため Git 管理外です。画像は元サイトの URL を参照します。サイト運営者の許諾・規約に従って利用してください。
+`npm run data` は `palworld.gg` の英語/日本語 Paldeck と Palworld Wiki のアイコンAPIを取得し、正規化データと Neo4j 用 CSV/Cypher を生成します。生成スナップショットと CSV/Cypher は大容量のため Git 管理外です。画面は安定した元画像URLを使い、静的APIとNeo4jには `wsrv.nl` のWebP代替URLも残します。各サイトの許諾・規約に従って利用してください。
 
 Neo4j は `neo4j/compose.yml` の `pal-atlas-neo4j` 一つだけを正本として保持します。Pages の JSON はそのグラフを表示するための生成物で、別の永続データベースではありません。
 
@@ -35,6 +35,13 @@ Neo4jを参照する最小APIです。`npm run api` で起動します。
 - `GET /api/pals/:id/recipes`
 - `GET /api/breed?parentA=anubis&parentB=katress`
 - `GET /api/health`
+
+Pages上の静的API（Neo4jを常駐公開しない軽量経路）:
+
+- [API index](https://kafka2306.github.io/pal-atlas/api/index.json)
+- [Pal catalog](https://kafka2306.github.io/pal-atlas/api/pals.json)
+- [Breeding pairs](https://kafka2306.github.io/pal-atlas/api/breeding.json)
+- [Anubis detail](https://kafka2306.github.io/pal-atlas/api/pals/anubis.json)
 
 ## Sources
 

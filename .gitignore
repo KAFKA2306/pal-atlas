@@ -7,8 +7,11 @@ dist/
 data/pals.json
 data/breeding.json
 data/sources.json
+data/notes.json
+data/quality-notes.md
 neo4j/pals.csv
 neo4j/breeding_edges.csv
 neo4j/special_edges.csv
 neo4j/import.cypher
 neo4j/queries.cypher
+public/api/

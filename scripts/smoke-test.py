@@ -7,6 +7,8 @@ with sync_playwright() as p:
     page = browser.new_page(viewport={"width": 1440, "height": 1000})
     page.on("console", lambda message: errors.append(message.text) if message.type == "error" else None)
     page.goto(os.environ.get("PAL_ATLAS_URL", "http://127.0.0.1:5173"), wait_until="domcontentloaded")
+    for endpoint in ("/api/index.json", "/api/pals.json", "/api/breeding.json", "/api/pals/anubis.json"):
+        assert page.request.get(os.environ.get("PAL_ATLAS_URL", "http://127.0.0.1:5173") + endpoint).ok, f"static API failed: {endpoint}"
     page.wait_for_selector(".pal-card")
     assert page.locator(".pal-card").count() >= 297, "catalog cards did not render"
     first_ranks = [int(value) for value in page.locator(".pal-card .card-rank").all_inner_texts()[:6]]
