@@ -16,11 +16,18 @@ with sync_playwright() as p:
     assert page.locator(".breeding-graph").count() == 1, "graph did not render"
     assert page.locator(".recipe-row").count() >= 1, "recipe events did not render"
     assert page.locator(".recipe-row .recipe-pal.parent-a").count() == page.locator(".recipe-row .recipe-pal.parent-b").count(), "parent slots are not paired"
+    assert page.locator(".recipe-row .recipe-pal.target").evaluate_all("els => els.every(el => el.tagName === 'SPAN')"), "recipe targets must not be clickable"
     before = page.locator(".trail span").inner_text()
     page.locator('[data-drill="true"][data-select]').first.click()
     after = page.locator(".trail span").inner_text()
     assert page.locator("[data-back]:not([disabled])").count() == 1, "drill-down back button is not enabled"
     assert after != before and "→" in after, "breadcrumb did not grow after parent click"
+    page.locator("[data-back]:not([disabled])").click()
+    parent_b = page.locator(".recipe-row .recipe-pal.parent-b").first
+    parent_b_name = parent_b.locator("b").inner_text()
+    parent_b.click()
+    assert parent_b_name in page.locator(".trail span").inner_text(), "parent B click did not select parent B"
+    page.locator("[data-back]:not([disabled])").click()
     page.locator("[data-lang-toggle]").click()
     assert "Trace the parents" in page.locator("h1").inner_text(), "language toggle failed"
     page.locator("[data-theme-toggle]").click()
