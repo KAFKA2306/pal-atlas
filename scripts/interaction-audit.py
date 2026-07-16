@@ -53,8 +53,17 @@ with sync_playwright() as p:
     results["breadcrumb_after_back"] = page.locator(".trail span").inner_text()
     results["output_cards"] = page.locator(".output-card").count()
     assert results["output_cards"] > 0, "reverse output cards did not render"
+    page.locator(".recipe-save").first.click()
+    results["saved_recipes"] = page.locator(".saved-item").count()
+    assert results["saved_recipes"] == 1, "recipe was not saved"
+    page.locator(".saved-item .recipe-save").first.click()
+    assert page.locator(".saved-item").count() == 0, "recipe was not removed"
+    page.locator(".output-card .recipe-save").first.click()
+    assert page.locator(".saved-item").count() == 1, "output recipe was not saved"
+    page.locator(".saved-item .recipe-save").first.click()
+    assert page.locator(".saved-item").count() == 0, "output recipe was not removed"
     output_name = page.locator(".output-card strong").first.inner_text()
-    page.locator(".output-card").first.click()
+    page.locator(".output-card .output-open").first.click()
     assert output_name in page.locator(".trail span").inner_text(), "output card did not select its child"
     page.locator("[data-back]").click()
     page.locator('[data-drill="true"][data-select]').first.click()

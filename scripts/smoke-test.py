@@ -21,8 +21,17 @@ with sync_playwright() as p:
     assert page.locator(".recipe-row .recipe-pal.target").evaluate_all("els => els.every(el => el.tagName === 'SPAN')"), "recipe targets must not be clickable"
     assert page.locator(".output-panel").count() == 1, "reverse output panel did not render"
     assert page.locator(".output-card").count() > 0, "reverse output cards did not render"
+    assert page.locator(".recipe-save").count() > 0, "recipe save controls did not render"
+    page.locator(".recipe-save").first.click()
+    assert page.locator("#saved-view").count() == 1, "saved recipe section did not render"
+    assert page.locator(".saved-item").count() == 1, "saved recipe was not listed"
+    page.reload(wait_until="domcontentloaded")
+    page.wait_for_selector(".pal-card")
+    assert page.locator("#saved-view").count() == 1, "saved recipe did not persist without login"
+    page.locator(".saved-item .recipe-save").first.click()
+    assert page.locator("#saved-view").count() == 0, "saved recipe was not removable"
     output_name = page.locator(".output-card strong").first.inner_text()
-    page.locator(".output-card").first.click()
+    page.locator(".output-card .output-open").first.click()
     assert output_name in page.locator(".trail span").inner_text(), "output card did not select its child"
     page.locator("[data-back]:not([disabled])").click()
     before = page.locator(".trail span").inner_text()

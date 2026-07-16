@@ -19,6 +19,8 @@ npm run dev
 
 Neo4j は `neo4j/compose.yml` の `pal-atlas-neo4j` 一つだけを正本として保持します。Pages の JSON はそのグラフを表示するための生成物で、別の永続データベースではありません。
 
+保存した配合はログイン不要で、同じブラウザの `localStorage` にのみ保存されます。端末・ブラウザをまたぐ同期はありません。
+
 ## Data model
 
 - `Pal` — パル本体、配合値、通常配合対象外フラグ、画像URL

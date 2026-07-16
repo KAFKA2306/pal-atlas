@@ -6,17 +6,20 @@ import './styles.css';
 
 const pals = palData.pals;
 const byId = new Map(pals.map((pal) => [pal.id, pal]));
-const byName = new Map(pals.map((pal) => [pal.nameEn, pal]));
 const featuredNormal = breedingData.featuredNormal;
 const special = breedingData.special.filter((row) => row.status === 'resolved');
 const outputs = childrenUiData.outputs;
+const recipesById = new Map([
+  ...special.map((row) => [row.id, { ...row, kind: 'special' }]),
+  ...breedingData.normal.map((row) => [row.id, { ...row, kind: 'normal' }]),
+]);
 
 const copy = {
   ja: {
     eyebrow: 'PAL ATLAS / BREEDING GRAPH',
     title: '親をたどると、配合の地図になる。',
     lead: 'パルを選ぶと、実際の親ペアと配合値を表示します。親をクリックして配合をたどれます。',
-    catalog: '図鑑', graph: '配合グラフ', atlasLink: '図鑑へ', graphLink: '配合グラフへ', search: 'パルを検索', all: 'すべて', parents: '親候補', children: '配合先', outputs: 'このパルから生まれる子', special: '特殊配合', normal: '通常配合', rank: '配合値', sources: '出典', insight: '見えてくる知見',
+    catalog: '図鑑', graph: '配合グラフ', atlasLink: '図鑑へ', graphLink: '配合グラフへ', saved: '保存', search: 'パルを検索', all: 'すべて', parents: '親候補', children: '配合先', outputs: 'このパルから生まれる子', special: '特殊配合', normal: '通常配合', rank: '配合値', sources: '出典', insight: '見えてくる知見', save: '配合を保存', savedState: '保存済み', savedRecipes: '保存した配合',
     choose: 'パルを選ぶ', formula: '通常配合のルール', formulaText: '親2体の配合値から中間値を出し、最も近い配合値のパルへ着地します。特殊配合はこのルールを上書きします。',
     direct: '固有レシピ', nearby: '値が近い親', unresolved: '未解決の出典行',
     cards: 'パル', noResult: '該当するパルがありません。',
@@ -25,7 +28,7 @@ const copy = {
     eyebrow: 'PAL ATLAS / BREEDING GRAPH',
     title: 'Trace the parents. Read the map.',
     lead: 'Choose a Pal to see its actual parent pairs and breeding rank. Click a parent to follow the graph.',
-    catalog: 'Atlas', graph: 'Breeding graph', atlasLink: 'Atlas', graphLink: 'Breeding graph', search: 'Search Pals', all: 'All', parents: 'Parent signals', children: 'Outputs', outputs: 'Children from this Pal', special: 'Special', normal: 'Normal', rank: 'Breeding Rank', sources: 'Sources', insight: 'What this reveals',
+    catalog: 'Atlas', graph: 'Breeding graph', atlasLink: 'Atlas', graphLink: 'Breeding graph', saved: 'Saved', search: 'Search Pals', all: 'All', parents: 'Parent signals', children: 'Outputs', outputs: 'Children from this Pal', special: 'Special', normal: 'Normal', rank: 'Breeding Rank', sources: 'Sources', insight: 'What this reveals', save: 'Save recipe', savedState: 'Saved', savedRecipes: 'Saved recipes',
     choose: 'Choose a Pal', formula: 'Normal breeding rule', formulaText: 'The two parent ranks become an intermediate value, then resolve to the closest eligible Pal rank. Special combinations override this rule.',
     direct: 'Exact recipe', nearby: 'Rank-near parent', unresolved: 'Unresolved source row',
     cards: 'Pals', noResult: 'No Pals match this filter.',
@@ -44,6 +47,17 @@ function readPreference(key, fallback, allowed) {
 function writePreference(key, value) {
   try { localStorage.setItem(key, value); } catch { /* private storage can be unavailable */ }
 }
+
+function readSavedRecipes() {
+  try {
+    const value = JSON.parse(localStorage.getItem('pal-atlas-saved-recipes') ?? '[]');
+    return new Set(Array.isArray(value) ? value.filter((id) => typeof id === 'string' && recipesById.has(id)) : []);
+  } catch {
+    return new Set();
+  }
+}
+
+const savedRecipeIds = readSavedRecipes();
 
 const state = {
   lang: readPreference('pal-atlas-lang', 'ja', ['ja', 'en']),
@@ -81,13 +95,13 @@ function imageMarkup(pal, alt = '') {
 
 function directParentRows(pal) {
   return special.filter((row) => row.child === pal.id).map((row) => ({
-    kind: 'special', parentA: byId.get(row.parentA), parentB: byId.get(row.parentB), label: row.kind,
+    id: row.id, kind: 'special', parentA: byId.get(row.parentA), parentB: byId.get(row.parentB), label: row.kind,
   }));
 }
 
 function normalParentRows(pal) {
   return (featuredNormal[pal.id] ?? []).map((row) => ({
-    kind: 'normal', parentA: byId.get(row.parentA), parentB: byId.get(row.parentB), intermediatePower: row.intermediatePower, label: t('nearby'),
+    id: row.id, kind: 'normal', parentA: byId.get(row.parentA), parentB: byId.get(row.parentB), intermediatePower: row.intermediatePower, label: t('nearby'),
   }));
 }
 
@@ -95,6 +109,11 @@ function parentRows(pal) {
   const direct = directParentRows(pal);
   const normal = normalParentRows(pal).filter((row) => !direct.some((item) => item.parentA?.id === row.parentA?.id && item.parentB?.id === row.parentB?.id));
   return [...direct, ...normal].slice(0, 6);
+}
+
+function recipeSaveButton(row) {
+  const saved = savedRecipeIds.has(row.id);
+  return `<button class="recipe-save ${saved ? 'is-saved' : ''}" data-save-recipe="${esc(row.id)}" aria-label="${saved ? t('savedState') : t('save')}">${saved ? '♥' : '♡'}</button>`;
 }
 
 function outputRows(pal) {
@@ -109,14 +128,27 @@ function outputCount(pal) {
   return outputs[pal.id]?.total ?? 0;
 }
 
+function savedRecipeRows() {
+  return [...savedRecipeIds].map((id) => recipesById.get(id)).filter(Boolean);
+}
+
+function savedSection(rows) {
+  if (!rows.length) return '';
+  return `<section class="saved-section" id="saved-view"><div class="section-head"><div><span class="micro-label">05 / ${t('saved')}</span><h2>${t('savedRecipes')}</h2></div><span class="result-count">${rows.length}</span></div><div class="saved-list">${rows.map((row) => {
+    const parentA = byId.get(row.parentA); const parentB = byId.get(row.parentB); const child = byId.get(row.child);
+    if (!parentA || !parentB || !child) return '';
+    return `<div class="saved-item"><button class="saved-open" data-select="${child.id}" data-drill="true" aria-label="${esc(palName(child))}"><span><b>${esc(palName(parentA))} + ${esc(palName(parentB))}</b><small>${row.kind === 'special' ? t('direct') : `${t('nearby')} / ${row.intermediatePower}`}</small></span><strong>→ ${esc(palName(child))}</strong></button>${recipeSaveButton(row)}</div>`;
+  }).join('')}</div></section>`;
+}
+
 function outputCard(pal, row) {
   const pair = `${palName(row.otherParent)} + ${palName(pal)}`;
   const label = row.kind === 'special'
     ? `${pair} / ${t('direct')}`
     : `${pair} / ${t('nearby')} Δ${row.delta}`;
-  return `<button class="output-card" data-select="${row.childPal.id}" data-drill="true" aria-label="${esc(palName(row.childPal))}">
+  return `<div class="output-card"><button class="output-open" data-select="${row.childPal.id}" data-drill="true" aria-label="${esc(palName(row.childPal))}">
     ${imageMarkup(row.childPal, palName(row.childPal))}<span><strong>${esc(palName(row.childPal))}</strong><small>${esc(label)}</small></span><b>${row.childPal.breedingRank}</b>
-  </button>`;
+  </button>${recipeSaveButton(row)}</div>`;
 }
 
 function filteredPals() {
@@ -141,8 +173,8 @@ function applyTheme() {
   document.documentElement.dataset.colorTheme = state.theme;
 }
 
-function card(pal, compact = false) {
-  return `<button class="pal-card ${compact ? 'compact' : ''} ${pal.id === selected().id ? 'is-selected' : ''}" data-select="${pal.id}" ${compact ? 'data-drill="true"' : ''} aria-label="${esc(palName(pal))}">
+function card(pal) {
+  return `<button class="pal-card ${pal.id === selected().id ? 'is-selected' : ''}" data-select="${pal.id}" aria-label="${esc(palName(pal))}">
     ${imageMarkup(pal, palName(pal))}
     <span class="card-copy"><strong>${esc(palName(pal))}</strong><small>${esc(pal.nameEn === pal.nameJa ? pal.nameEn : state.lang === 'ja' ? pal.nameEn : pal.nameJa)}</small></span>
     <span class="card-rank">${pal.breedingRank}</span>
@@ -161,7 +193,7 @@ function graphView(pal) {
   return `<div class="graph-panel"><div class="graph-head"><div><span class="micro-label">${t('graph')}</span><h3>${esc(palName(pal))} <span>/ ${pal.breedingRank}</span></h3></div></div>
     <div class="recipe-list breeding-graph" aria-label="${esc(palName(pal))} breeding recipes">${rows.length ? rows.map((row) => `<div class="recipe-row ${row.kind}">
       ${recipePal(row.parentA, 'parent-a')}<span class="recipe-plus">＋</span>${recipePal(row.parentB, 'parent-b')}
-      <div class="recipe-rule"><b>${row.kind === 'special' ? t('direct') : t('normal')}</b><small>${row.kind === 'special' ? esc(row.label) : `${t('nearby')} / ${row.intermediatePower}`}</small></div>
+      <div class="recipe-rule"><b>${row.kind === 'special' ? t('direct') : t('normal')}</b><small>${row.kind === 'special' ? esc(row.label) : `${t('nearby')} / ${row.intermediatePower}`}</small>${recipeSaveButton(row)}</div>
       <span class="recipe-arrow" aria-hidden="true">→</span>${recipePal(pal, 'target')}
     </div>`).join('') : `<p class="muted">${t('unresolved')}</p>`}</div></div>`;
 }
@@ -182,8 +214,9 @@ function render() {
   const uniqueSpecial = special.length;
   const childRows = outputRows(pal);
   const visibleChildRows = childRows.slice(0, 12);
+  const savedRows = savedRecipeRows();
   document.querySelector('#app').innerHTML = `<main class="shell">
-    <header class="topbar"><a class="brand" href="#top"><span class="brand-glyph">✳</span><span>PAL ATLAS</span><small>BREEDING GRAPH</small></a><nav><a class="text-button" href="#atlas-view">${t('atlasLink')}</a><a class="text-button" href="#graph-view">${t('graphLink')}</a><button class="icon-button" data-lang-toggle="true">${state.lang === 'ja' ? 'EN' : '日'}</button><button class="icon-button" data-theme-toggle="true">${state.theme === 'dark' ? '☼' : '☾'}</button></nav></header>
+    <header class="topbar"><a class="brand" href="#top"><span class="brand-glyph">✳</span><span>PAL ATLAS</span></a><nav><a class="text-button" href="#atlas-view">${t('atlasLink')}</a><a class="text-button" href="#graph-view">${t('graphLink')}</a><button class="text-button saved-link" data-saved-link="true">♡ ${t('saved')} ${savedRows.length}</button><button class="icon-button" data-lang-toggle="true">${state.lang === 'ja' ? 'EN' : '日'}</button><button class="icon-button" data-theme-toggle="true">${state.theme === 'dark' ? '☼' : '☾'}</button></nav></header>
     <section class="hero" id="top"><div class="hero-copy"><span class="eyebrow">${t('eyebrow')}</span><h1>${t('title')}</h1><p>${t('lead')}</p></div></section>
     <section class="metric-row"><div><b>${palData.meta.catalogCount}</b><span>${t('catalog')}</span></div><div><b>${palData.meta.normalPairCount.toLocaleString()}</b><span>${t('normal')} edges</span></div><div><b>${uniqueSpecial}</b><span>${t('special')} edges</span></div></section>
     <section class="workspace" id="atlas-view">
@@ -197,8 +230,8 @@ function render() {
       </aside>
     </section>
     <section class="graph-section" id="graph-view">${graphView(pal)}<div class="candidate-panel output-panel"><div class="section-head"><div><span class="micro-label">04 / ${t('children')}</span><h2>${t('outputs')}</h2></div><span class="result-count">${visibleChildRows.length} / ${outputCount(pal)}</span></div><div class="output-grid">${visibleChildRows.length ? visibleChildRows.map((row) => outputCard(pal, row)).join('') : `<p class="muted">${t('unresolved')}</p>`}</div></div></section>
-    <section class="source-section"><div><span class="micro-label">05 / ${t('sources')}</span><h2>${state.lang === 'ja' ? '出典を分けて保持する' : 'Keep provenance visible'}</h2></div><div class="source-list">${sourceData.sources.map((source) => `<a href="${source.url}" target="_blank" rel="noreferrer"><span>${esc(source.title)}</span><small>${esc(source.role)}</small><b>↗</b></a>`).join('')}</div></section>
-    <footer><span>PAL ATLAS / independent fan project</span></footer>
+    ${savedSection(savedRows)}
+    <section class="source-section"><div><span class="micro-label">06 / ${t('sources')}</span><h2>${state.lang === 'ja' ? '出典を分けて保持する' : 'Keep provenance visible'}</h2></div><div class="source-list">${sourceData.sources.map((source) => `<a href="${source.url}" target="_blank" rel="noreferrer"><span>${esc(source.title)}</span><small>${esc(source.role)}</small><b>↗</b></a>`).join('')}</div></section>
   </main>`;
   bind();
 }
@@ -208,8 +241,23 @@ function bind() {
   if (!app || appBound) return;
   appBound = true;
   app.addEventListener('click', (event) => {
-    const target = event.target.closest('[data-select], [data-back], [data-lang-toggle], [data-theme-toggle]');
+    const target = event.target.closest('[data-select], [data-back], [data-save-recipe], [data-saved-link], [data-lang-toggle], [data-theme-toggle]');
     if (!target || !app.contains(target)) return;
+    if (target.dataset.saveRecipe) {
+      event.preventDefault();
+      const id = target.dataset.saveRecipe;
+      if (!recipesById.has(id)) return;
+      if (savedRecipeIds.has(id)) savedRecipeIds.delete(id); else savedRecipeIds.add(id);
+      writePreference('pal-atlas-saved-recipes', JSON.stringify([...savedRecipeIds]));
+      const scrollY = window.scrollY;
+      render();
+      requestAnimationFrame(() => window.scrollTo(0, scrollY));
+      return;
+    }
+    if (target.dataset.savedLink !== undefined) {
+      document.querySelector('#saved-view')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return;
+    }
     if (target.dataset.select) {
       const id = target.dataset.select;
       if (!byId.has(id)) return;
@@ -257,13 +305,6 @@ function bind() {
     if (event.target.matches('[data-element]')) {
       state.element = event.target.value;
       updateCatalog();
-    }
-  });
-  app.addEventListener('keydown', (event) => {
-    const target = event.target.closest('.graph-node');
-    if (target && (event.key === 'Enter' || event.key === ' ')) {
-      event.preventDefault();
-      target.click();
     }
   });
 }
