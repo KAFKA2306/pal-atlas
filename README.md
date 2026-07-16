@@ -41,6 +41,7 @@ Pages上の静的API（Neo4jを常駐公開しない軽量経路）:
 - [API index](https://kafka2306.github.io/pal-atlas/api/index.json)
 - [Pal catalog](https://kafka2306.github.io/pal-atlas/api/pals.json)
 - [Breeding pairs](https://kafka2306.github.io/pal-atlas/api/breeding.json)
+- [Sources](https://kafka2306.github.io/pal-atlas/api/sources.json)
 - [Anubis detail](https://kafka2306.github.io/pal-atlas/api/pals/anubis.json)
 
 ## Sources
