@@ -15,8 +15,8 @@ with sync_playwright() as p:
     assert page.locator(".pal-card").count() >= 297, "catalog cards did not render"
     first_ranks = [int(value) for value in page.locator(".pal-card .card-rank").all_inner_texts()[:6]]
     assert first_ranks == sorted(first_ranks), f"default rank order failed: {first_ranks}"
-    assert page.locator(".breeding-graph").count() == 1, "graph did not render"
-    assert page.locator(".recipe-row").count() >= 1, "recipe events did not render"
+    assert page.locator(".breeding-recipes").count() == 1, "recipe routes did not render"
+    assert page.locator(".recipe-row").count() >= 1, "recipe rows did not render"
     assert page.locator(".recipe-row .recipe-pal.parent-a").count() == page.locator(".recipe-row .recipe-pal.parent-b").count(), "parent slots are not paired"
     assert page.locator(".recipe-row .recipe-pal.target").evaluate_all("els => els.every(el => el.tagName === 'SPAN')"), "recipe targets must not be clickable"
     assert page.locator(".output-panel").count() == 1, "reverse output panel did not render"
@@ -30,6 +30,9 @@ with sync_playwright() as p:
     assert page.locator("#saved-view").count() == 1, "saved recipe did not persist without login"
     page.locator(".saved-item .recipe-save").first.click()
     assert page.locator("#saved-view").count() == 0, "saved recipe was not removable"
+    page.locator(".more-button").click()
+    page.wait_for_selector(".more-button", state="detached")
+    assert page.locator(".output-card").count() == len(anubis_detail["recipes"]["outputs"]), "all output recipes did not load"
     output_name = page.locator(".output-card strong").first.inner_text()
     page.locator(".output-card .output-open").first.click()
     assert output_name in page.locator(".trail span").inner_text(), "output card did not select its child"
@@ -46,15 +49,15 @@ with sync_playwright() as p:
     assert parent_b_name in page.locator(".trail span").inner_text(), "parent B click did not select parent B"
     page.locator("[data-back]:not([disabled])").click()
     page.locator("[data-lang-toggle]").click()
-    assert "Trace the parents" in page.locator("h1").inner_text(), "language toggle failed"
+    assert "Saved" in page.locator("[data-saved-link]").inner_text(), "language toggle failed"
     page.locator("[data-theme-toggle]").click()
     assert page.locator("html[data-color-theme='light']").count() == 1, "theme toggle failed"
     page.locator('.pal-card[data-select="jetragon"]').first.click()
-    assert page.locator("#graph-view .recipe-row.special").count() >= 1, "special recipe event did not render"
-    assert page.locator("#graph-view .recipe-row.normal").count() == 0, "ignored Pal leaked into normal recipes"
+    assert page.locator("#recipe-view .recipe-row.special").count() >= 1, "special recipe event did not render"
+    assert page.locator("#recipe-view .recipe-row.normal").count() == 0, "ignored Pal leaked into normal recipes"
     page.screenshot(path="/tmp/pal-atlas-smoke.png", full_page=True)
     browser.close()
 
 if errors:
     raise AssertionError(f"browser console errors: {errors}")
-print("smoke test passed: catalog, graph, drill-down breadcrumb, language, theme")
+print("smoke test passed: catalog, routes, save persistence, outputs, language, theme")

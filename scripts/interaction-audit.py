@@ -15,13 +15,8 @@ with sync_playwright() as p:
     print("loaded", flush=True)
 
     results = {"cards": page.locator(".pal-card").count(), "first_rank": page.locator(".pal-card .card-rank").first.inner_text()}
-    page.locator('a[href="#graph-view"]').click()
-    print("view graph", flush=True)
-    results["graph_anchor"] = page.locator('a[href="#graph-view"]').count()
-    results["graph_panel_visible"] = page.locator(".graph-panel").is_visible()
-    page.locator('a[href="#atlas-view"]').click()
-    print("view atlas", flush=True)
-    results["atlas_anchor"] = page.locator('a[href="#atlas-view"]').count()
+    results["recipe_anchor"] = page.locator("#recipe-view").count()
+    results["recipe_panel_visible"] = page.locator(".recipe-panel").is_visible()
 
     search = page.locator("[data-search]")
     search.fill("Anubis")
@@ -32,13 +27,9 @@ with sync_playwright() as p:
     print("filter", flush=True)
     results["filter_value"] = page.locator("[data-element]").input_value()
 
-    try:
-        page.locator("[data-lang-toggle]").click(timeout=3000)
-    except Exception as error:
-        print("lang click failed", error, flush=True)
-        raise
+    page.locator("[data-lang-toggle]").click(timeout=3000)
     print("lang", flush=True)
-    results["english"] = "Trace the parents" in page.locator("h1").inner_text()
+    results["english"] = "Saved" in page.locator("[data-saved-link]").inner_text()
     page.locator("[data-theme-toggle]").click()
     print("theme", flush=True)
     results["light"] = page.locator("html[data-color-theme='light']").count()

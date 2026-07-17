@@ -153,7 +153,6 @@ const pals = english.map((pal) => {
     sourceId: source.id,
   };
 });
-const byName = new Map(pals.map((pal) => [pal.nameEn, pal]));
 const sourceById = new Map(sourcePals.map((pal) => [pal.id, pal]));
 const currentBySlug = new Map(pals.map((pal) => [pal.id, pal]));
 const resolveSourceId = (id) => currentBySlug.get(sourceById.get(id)?.slug.trim());
@@ -254,8 +253,7 @@ const normalRows = normal.map((row) => ({ ...row, parentAName: palsById.get(row.
 await writeFile(`${NEO4J_DIR}/pals.csv`, csv(pals.map((pal) => ({ ...pal, elements: pal.elements.join('|') })), ['id', 'order', 'nameEn', 'nameJa', 'imageFile', 'imageUrl', 'imageOriginalUrl', 'imageReferenceUrl', 'imageWebpUrl', 'imageMime', 'imageDelivery', 'elements', 'rarity', 'rarityTier', 'breedingRank', 'combiPriority', 'sourceIndex', 'ignoreCombi', 'sourceId']));
 await writeFile(`${NEO4J_DIR}/breeding_edges.csv`, csv(normalRows, ['id', 'parentA', 'parentAName', 'parentB', 'parentBName', 'child', 'childName', 'intermediatePower', 'rule']));
 await writeFile(`${NEO4J_DIR}/special_edges.csv`, csv(special, ['id', 'child', 'childName', 'parentA', 'parentAName', 'parentB', 'parentBName', 'kind', 'status', 'sourceOwner']));
-await writeFile(`${NEO4J_DIR}/import.cypher`, `// Generated ${fetchedAt}
-CREATE CONSTRAINT pal_id IF NOT EXISTS FOR (p:Pal) REQUIRE p.id IS UNIQUE;
+await writeFile(`${NEO4J_DIR}/import.cypher`, `CREATE CONSTRAINT pal_id IF NOT EXISTS FOR (p:Pal) REQUIRE p.id IS UNIQUE;
 CREATE CONSTRAINT breeding_pair_id IF NOT EXISTS FOR (b:BreedingPair) REQUIRE b.id IS UNIQUE;
 
 LOAD CSV WITH HEADERS FROM 'file:///pals.csv' AS row
@@ -281,14 +279,12 @@ MERGE (a)-[:PARENT_A]->(pair)
 MERGE (b)-[:PARENT_B]->(pair)
 MERGE (pair)-[:PRODUCES]->(c);
 `);
-await writeFile(`${NEO4J_DIR}/queries.cypher`, `// Target Pal and its parent pairs
-MATCH (a:Pal)-[:PARENT_A|PARENT_B]->(pair:BreedingPair)-[:PRODUCES]->(c:Pal)
+await writeFile(`${NEO4J_DIR}/queries.cypher`, `MATCH (a:Pal)-[:PARENT_A|PARENT_B]->(pair:BreedingPair)-[:PRODUCES]->(c:Pal)
 MATCH (b:Pal)-[:PARENT_A|PARENT_B]->(pair)
 WHERE c.id = 'anubis' AND a.id <> b.id
 RETURN a.nameEn AS parentA, b.nameEn AS parentB, pair.kind, pair.intermediatePower, pair.specialKind
 ORDER BY pair.kind DESC, pair.intermediatePower;
 
-// Parent candidates for every target, ranked by the target-rank distance
 MATCH (a:Pal)-[:PARENT_A|PARENT_B]->(pair:BreedingPair)-[:PRODUCES]->(c:Pal)
 MATCH (b:Pal)-[:PARENT_A|PARENT_B]->(pair)
 WHERE a.id < b.id
