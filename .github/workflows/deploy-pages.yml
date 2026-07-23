@@ -63,3 +63,74 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
+
+  live-audit:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Inspect active Pages source
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/pages" \
+            | jq '{html_url, status, build_type, source, public}'
+
+      - name: Verify the real public application
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="https://kafka2306.github.io/pal-atlas"
+          origin="https://kafka2306.github.io"
+          tmp="$(mktemp -d)"
+
+          matched=false
+          for attempt in $(seq 1 36); do
+            curl --fail --silent --show-error --location \
+              "$base/?smoke=${GITHUB_SHA}-${attempt}" -o "$tmp/index.html"
+            if grep -Fq '2026-07-23-pastel-watercolor-1' "$tmp/index.html"; then
+              matched=true
+              break
+            fi
+            echo "Live site has not propagated yet (attempt ${attempt})."
+            sleep 10
+          done
+          test "$matched" = true
+          grep -F '<div id="app"></div>' "$tmp/index.html"
+
+          HTML="$tmp/index.html" python - <<'PY' > "$tmp/assets.env"
+          import os
+          import re
+          from pathlib import Path
+
+          html = Path(os.environ["HTML"]).read_text(encoding="utf-8")
+          css = re.search(r'href="([^"]+\.css)"', html)
+          js = re.search(r'src="([^"]+\.js)"', html)
+          if not css or not js:
+              raise SystemExit("Built CSS or JS asset was not found")
+          print(f'CSS_PATH={css.group(1)}')
+          print(f'JS_PATH={js.group(1)}')
+          PY
+          source "$tmp/assets.env"
+
+          curl --fail --silent --show-error --location "$origin$CSS_PATH" -o "$tmp/app.css"
+          grep -F -- '--lavender:' "$tmp/app.css"
+          grep -F -- '--rose:' "$tmp/app.css"
+          grep -F -- '--mint:' "$tmp/app.css"
+          grep -F '[data-theme-toggle]{display:none!important}' "$tmp/app.css"
+
+          curl --fail --silent --show-error --location "$origin$JS_PATH" -o "$tmp/app.js"
+          grep -F 'PAL ATLAS' "$tmp/app.js"
+          grep -F 'data-search' "$tmp/app.js"
+          grep -F 'pal-atlas-saved-recipes' "$tmp/app.js"
+
+          curl --fail --silent --show-error --location "$base/api/index.json?smoke=${GITHUB_SHA}" -o "$tmp/api-index.json"
+          curl --fail --silent --show-error --location "$base/api/pals/anubis.json?smoke=${GITHUB_SHA}" -o "$tmp/anubis.json"
+          python -m json.tool "$tmp/api-index.json" >/dev/null
+          python -m json.tool "$tmp/anubis.json" >/dev/null
+
+          echo "Live Pages audit passed: $base/"
