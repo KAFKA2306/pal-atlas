@@ -1,0 +1,86 @@
+project:
+  id: kafka:pal-atlas
+  name: PAL ATLAS
+  repository: https://github.com/KAFKA2306/pal-atlas
+  pages: https://kafka2306.github.io/pal-atlas/
+  version: 0.1.0
+  updated: 2026-07-30
+  core_ontology: https://raw.githubusercontent.com/KAFKA2306/know/main/ontology/causal-evidence-core.yaml
+  schema: https://raw.githubusercontent.com/KAFKA2306/know/main/ontology/project.schema.json
+
+purpose:
+  problem: Represent the Palworld catalog, breeding ranks, normal breeding rules, and special combinations as a source-traceable graph and static public interface.
+  intended_decisions: [accept_entity, reject_entity, accept_breeding_edge, flag_conflict, publish_snapshot]
+  success_conditions:
+    - Pal identity, localized names, rank, exclusions, image links, and source records are normalized.
+    - Normal-formula results and source-reported special combinations remain distinguishable.
+    - Every graph edge retains rule or source provenance.
+    - Static Pages artifacts are reproducible from recorded sources and transformation code.
+  falsification_conditions:
+    - A special combination is presented as a normal-formula result or vice versa.
+    - Source conflicts are silently overwritten.
+    - A Pal or breeding edge lacks stable identity or provenance.
+    - Generated graph, API, and displayed result disagree.
+
+scope:
+  included: [Pal catalog, localized identity, breeding rank, normal breeding formula, special breeding combinations, graph export, static API, browser-local saved combinations]
+  excluded: [official affiliation claims, persistent user accounts, redistribution of source-owned images by default, unsupported game mechanics]
+  temporal: Game version, acquisition time, source snapshot, and generator version are explicit.
+  abstraction_level: Knowledge graph and derived breeding-result service.
+
+competency_questions:
+  - Which source and game-version context support each Pal property?
+  - Was a breeding result derived by the normal formula or reported as a special combination?
+  - Which parent pair, rank values, exclusions, tie rules, and generator version produced a result?
+  - Do Neo4j, static JSON, and the user interface represent the same graph?
+  - Which source conflicts or missing properties remain unresolved?
+
+domain_mapping:
+  System: PalBreedingKnowledgeGraph
+  State: [catalog state, source snapshot state, graph state, publication state, browser saved-state]
+  Action: [acquire catalog, normalize Pal, calculate normal breeding, import special combination, generate graph, publish snapshot]
+  Process: [source retrieval, identity reconciliation, formula evaluation, nearest-rank selection, graph export, static build]
+  Observation: [source Pal record, source breeding combination, source image URL, game-version notice]
+  Model: [normal breeding formula, nearest eligible Pal selection, localization mapping, graph model]
+  Requirement: [stable identity, source provenance, rule provenance, special-normal separation, graph consistency, rights notice]
+  Claim: [Pal property, parent relationship, normal result, special result, source availability]
+  Evidence: [source URL, acquired record, generator input, formula trace, graph edge, API record]
+  Decision: [accept_entity, reject_entity, accept_breeding_edge, flag_conflict, publish_snapshot]
+
+claims_and_evidence:
+  assertion_types: [ReportedFact, CalculatedValue, Assumption, RequirementAssertion, DecisionAssertion]
+  required_evidence:
+    PalProperty: [source URL, stable Pal ID, acquisition time]
+    NormalBreedingResult: [parent IDs, parent ranks, formula version, eligibility filter, selected rank and Pal]
+    SpecialBreedingResult: [source-reported combination, source URL, parent and child IDs]
+    PublishedSnapshot: [graph build, static API consistency, source registry, build commit]
+  unknown_policy: Conflicting, absent, or version-ambiguous data is flagged and not silently resolved.
+
+decision_rules:
+  - id: accept-pal
+    when: A stable identity and source-backed required properties are available.
+    result: accept_entity
+  - id: accept-normal-edge
+    when: The versioned normal formula and eligibility rule deterministically produce the recorded child.
+    result: accept_breeding_edge
+  - id: accept-special-edge
+    when: A recorded source explicitly identifies the special parent-child combination.
+    result: accept_breeding_edge
+  - id: source-conflict
+    when: Material source values disagree and no explicit precedence rule resolves them.
+    result: flag_conflict
+  - id: publication-gate
+    when: Neo4j export, static JSON, UI data, tests, and source registry are consistent.
+    result: publish_snapshot
+
+provenance:
+  sources: [Palworld.gg, Palworld Wiki, cross-check databases, Pocketpair official news and documentation]
+  generated_artifacts: [normalized Pal records, breeding edges, Neo4j CSV and Cypher, static JSON API, Pages build]
+  agents: [data acquisition scripts, normal breeding calculator, graph generator, test suite, GitHub Actions]
+  lineage: Stable Pal and pair IDs connect source records, formula traces, graph edges, API records, and displayed results.
+
+validation:
+  structural: Unique Pal IDs, required properties, valid parent-child references, source registry, and JSON or graph shape.
+  semantic: Normal versus special provenance, rank formula, eligibility filtering, localization, and version context.
+  evidence: Source URLs, acquisition records, formula inputs, calculation trace, and graph-edge provenance.
+  publication: Regenerated graph, API, Pages build, links, and public endpoint consistency.
