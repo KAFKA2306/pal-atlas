@@ -7,6 +7,21 @@ Palworld 1.0 のパル図鑑、Breeding Rank、特殊配合、通常配合計算
 - GitHub Pages: [https://kafka2306.github.io/pal-atlas/](https://kafka2306.github.io/pal-atlas/)
 - Repository: [github.com/KAFKA2306/pal-atlas](https://github.com/KAFKA2306/pal-atlas)
 
+## Project ontology
+
+[`ontology/project.yaml`](ontology/project.yaml) は、図鑑・配合グラフ・生成APIを次の因果・証拠構造で記述します。
+
+```text
+PalBreedingKnowledgeGraph
+  -> catalog acquisition / normalization / breeding calculation
+  -> source observations
+  -> normal-formula or special-combination claims
+  -> source and calculation evidence
+  -> accept / reject / conflict / publish decisions
+```
+
+通常配合の計算値と、取得元が明示する特殊配合は異なる assertion type と provenance を持ちます。出典間の不一致は上書きせず `flag_conflict` とし、Neo4j、静的JSON、画面表示の一致を公開条件とします。
+
 ## Local
 
 ```bash
