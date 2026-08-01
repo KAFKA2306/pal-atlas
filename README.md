@@ -1,28 +1,53 @@
-# PAL ATLAS
+# PAL ATLAS — パル図鑑・配合検索
 
-Palworld 1.0 のパル図鑑、Breeding Rank、特殊配合、通常配合計算を一つのグラフとして扱う独立サイトです。
+**公開サイト:** https://kafka2306.github.io/pal-atlas/
 
-## Published site
+PAL ATLASは、Palworldのパル図鑑、Breeding Rank、通常配合、特殊配合を一つのデータ構造で扱う非公式ファンサイトです。
 
-- GitHub Pages: [https://kafka2306.github.io/pal-atlas/](https://kafka2306.github.io/pal-atlas/)
-- Repository: [github.com/KAFKA2306/pal-atlas](https://github.com/KAFKA2306/pal-atlas)
+「どの親から目的のパルを作れるか」「この2体を配合すると何が生まれるか」を、図鑑と配合グラフの両方から確認できます。
 
-## Project ontology
+## できること
 
-[`ontology/project.yaml`](ontology/project.yaml) は、図鑑・配合グラフ・生成APIを次の因果・証拠構造で記述します。
+- パル名から図鑑情報を検索
+- 親パル2体から通常配合結果を計算
+- 目的のパルを作る配合候補を確認
+- 通常配合と特殊配合を区別して表示
+- 静的JSON APIから図鑑・配合データを再利用
+- Neo4j上で親子関係をグラフとして探索
+- 保存した配合を同じブラウザの`localStorage`に保持
+
+## データの考え方
+
+通常配合は次の値を基準に、通常配合対象のパルから最も近い候補を選びます。
 
 ```text
-PalBreedingKnowledgeGraph
-  -> catalog acquisition / normalization / breeding calculation
-  -> source observations
-  -> normal-formula or special-combination claims
-  -> source and calculation evidence
-  -> accept / reject / conflict / publish decisions
+floor((rankA + rankB + 1) / 2)
 ```
 
-通常配合の計算値と、取得元が明示する特殊配合は異なる assertion type と provenance を持ちます。出典間の不一致は上書きせず `flag_conflict` とし、Neo4j、静的JSON、画面表示の一致を公開条件とします。
+取得元が明示する固有の組み合わせは、通常計算とは別の「特殊配合」として保存します。出典同士が一致しない場合は一方で上書きせず、競合状態として扱います。
 
-## Local
+機械可読な証拠構造は[`ontology/project.yaml`](ontology/project.yaml)にあります。
+
+## 公開API
+
+- [API index](https://kafka2306.github.io/pal-atlas/api/index.json)
+- [Pal catalog](https://kafka2306.github.io/pal-atlas/api/pals.json)
+- [Breeding pairs](https://kafka2306.github.io/pal-atlas/api/breeding.json)
+- [Sources](https://kafka2306.github.io/pal-atlas/api/sources.json)
+- [Anubis detail example](https://kafka2306.github.io/pal-atlas/api/pals/anubis.json)
+
+ローカルのNeo4j APIは次の経路を提供します。
+
+```text
+GET /api/pals?q=anubis&limit=20
+GET /api/pals/:id
+GET /api/pals/:id/recipes
+GET /api/pals/:id/outputs
+GET /api/breed?parentA=anubis&parentB=katress
+GET /api/health
+```
+
+## ローカル実行
 
 ```bash
 npm install
@@ -30,52 +55,26 @@ npm run data
 npm run dev
 ```
 
-`npm run data` は `palworld.gg` の英語/日本語 Paldeck と Palworld Wiki のアイコンAPIを取得し、正規化データと Neo4j 用 CSV/Cypher を生成します。生成スナップショットと CSV/Cypher は大容量のため Git 管理外です。画面は `wsrv.nl` のWebP URLを主経路にし、失敗時は元画像URLへ戻します。各サイトの許諾・規約に従って利用してください。
+Neo4j APIを起動する場合:
 
-Neo4j は `neo4j/compose.yml` の `pal-atlas-neo4j` 一つだけを正本として保持します。Pages の JSON はそのグラフを表示するための生成物で、別の永続データベースではありません。
+```bash
+npm run api
+```
 
-保存した配合はログイン不要で、同じブラウザの `localStorage` にのみ保存されます。端末・ブラウザをまたぐ同期はありません。
+`npm run data`は取得元からデータを読み込み、正規化JSONとNeo4j用CSV/Cypherを生成します。生成スナップショットは大容量のためGit管理外で、ローカル実行とGitHub Actionsの双方で再生成します。
 
-## Data model
+## 主な構成
 
-- `Pal` — パル本体、配合値、通常配合対象外フラグ、画像URL
-- `BreedingPair` — `PARENT_A` + `PARENT_B` → `PRODUCES` を表す配合イベント
+- `src/` — データ取得、正規化、配合計算
+- `neo4j/` — Neo4jの構成と投入用データ
+- `dist/` — GitHub Pages向け生成物
+- `ontology/project.yaml` — 取得・計算・公開判定の証拠モデル
+- `.github/workflows/deploy-pages.yml` — データ更新、ビルド、Pages公開
 
-通常配合は `floor((rankA + rankB + 1) / 2)` から、通常配合対象のパルだけを最近傍選択します。取得元の `combos` は特殊配合として自動取り込みします。
+## 情報源と注意点
 
-## API
+データ取得・照合にはPalworld.gg、Palworld Wiki、Game8、Paldeck、Pocketpair公式サイト・公式ニュース・公式ドキュメントを使用します。正確な最新仕様やゲーム内挙動は公式情報を優先してください。
 
-Neo4jを参照する最小APIです。`npm run api` で起動します。
+本プロジェクトはPocketpairとは関係のない非公式ファンプロジェクトです。名称・画像などの権利は各権利者に帰属します。
 
-- `GET /api/pals?q=anubis&limit=20`
-- `GET /api/pals/:id`
-- `GET /api/pals/:id/recipes`
-- `GET /api/pals/:id/outputs`
-- `GET /api/breed?parentA=anubis&parentB=katress`
-- `GET /api/health`
-
-Pages上の静的API（Neo4jを常駐公開しない軽量経路）:
-
-- [API index](https://kafka2306.github.io/pal-atlas/api/index.json)
-- [Pal catalog](https://kafka2306.github.io/pal-atlas/api/pals.json)
-- [Breeding pairs](https://kafka2306.github.io/pal-atlas/api/breeding.json)
-- [Sources](https://kafka2306.github.io/pal-atlas/api/sources.json)
-- [Anubis detail](https://kafka2306.github.io/pal-atlas/api/pals/anubis.json)
-
-## Sources
-
-- [Palworld.gg Paldeck / breeding calculator](https://palworld.gg/breeding-calculator) — current catalog, Breeding Rank, image URL baseline
-- [Palworld Wiki — Breeding](https://palworld.wiki.gg/wiki/Breeding) — normal calculation and special-combination rule reference
-- [Game8 — Breeding Combos Calculator](https://game8.co/games/Palworld/archives/440530) — breeding workflow and special-combination cross-check
-- [Paldeck](https://www.paldeck.cc/breeding) — independent database cross-check
-- [Pocketpair official news](https://news.palworldgame.com/) — official release/news context
-- [Pocketpair official Palworld site](https://www.pocketpair.jp/en/games-en/palworld-en/) — official game/version context
-- [Pocketpair official server docs](https://docs.palworldgame.com/) — official documentation entry point
-
-## GitHub Pages
-
-`.github/workflows/deploy-pages.yml` refreshes the generated data, builds `dist/`, and deploys it to [GitHub Pages](https://kafka2306.github.io/pal-atlas/). Set Pages source to **GitHub Actions** in repository settings if it is not enabled yet. The generated snapshot is intentionally not committed; the workflow and local build both regenerate it from the recorded sources.
-
-## Notice
-
-This is an independent fan project and is not affiliated with Pocketpair. Palworld and its imagery belong to their respective rights holders. The repository stores source links rather than republishing the image files by default.
+**README最終監査:** 2026-08-01
