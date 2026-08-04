@@ -1,0 +1,29 @@
+name: Validate PAL ATLAS navigator
+on:
+  pull_request:
+    paths:
+      - "navigate/**"
+      - ".github/workflows/uiux-navigator.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22.18.0"
+      - run: node --check navigate/navigate.js
+      - name: Validate deep-link, focus, history and save contracts
+        run: |
+          grep -q "params\|URLSearchParams" navigate/navigate.js
+          grep -q "pushState\|replaceState" navigate/navigate.js
+          grep -q "popstate" navigate/navigate.js
+          grep -q "scrollY" navigate/navigate.js
+          grep -q "localStorage" navigate/navigate.js
+          grep -q 'data-select' navigate/navigate.js
+          grep -q 'min-height:44px' navigate/navigate.css
+          grep -q '@media(max-width:460px)' navigate/navigate.css
+          grep -q 'prefers-reduced-motion' navigate/navigate.css
