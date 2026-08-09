@@ -8,6 +8,9 @@ on:
       - index.html
       - src/**
       - data/**
+      - public/**
+      - metrics/**
+      - docs/embed.md
       - scripts/**
       - package.json
       - package-lock.json
@@ -36,6 +39,15 @@ jobs:
       - run: npm run data
       - run: npm run verify:data
       - run: npm run build
+      - name: Verify embed artifact
+        run: |
+          set -euo pipefail
+          test -s dist/embed/breed/index.html
+          test -s dist/embed/breed/widget.js
+          grep -F '非公式ファンプロジェクト' dist/embed/breed/widget.js
+          grep -F 'embed_loaded' dist/embed/breed/widget.js
+          grep -F 'breed_searched' dist/embed/breed/widget.js
+          grep -F 'pal_atlas_opened' dist/embed/breed/widget.js
       - name: Verify pastel production artifact
         run: |
           set -euo pipefail
