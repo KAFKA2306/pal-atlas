@@ -6,6 +6,7 @@ const palData = await readJson('pals.json');
 const breedingData = await readJson('breeding.json');
 const childrenData = await readJson('children.json');
 const sourceData = await readJson('sources.json');
+const conflictData = await readJson('conflicts.json');
 const pals = palData.pals;
 const byId = new Map(pals.map((pal) => [pal.id, pal]));
 const eligible = pals
@@ -17,6 +18,10 @@ if (new Set(pals.map((pal) => pal.id)).size !== pals.length) throw new Error('du
 if (pals.some((pal) => !pal.nameEn || !pal.nameJa || !Number.isFinite(pal.breedingRank))) throw new Error('incomplete Pal fields');
 if (pals.some((pal) => !pal.imageUrl || !pal.imageOriginalUrl || !pal.imageReferenceUrl || !pal.imageWebpUrl || pal.imageDelivery !== 'webp-proxy')) throw new Error('incomplete image URLs');
 if (sourceData.sources.some((source) => source.url.startsWith('file:') || source.role?.includes('/mnt/'))) throw new Error('local path leaked into sources');
+if (sourceData.sources.some((source) => ![1, 2, 3].includes(source.sourceTier) || !source.sourceType)) throw new Error('source tier/type missing');
+if (sourceData.schemaVersion !== 'pal-atlas.sources.v1' || !sourceData.registryHash) throw new Error('source registry provenance missing');
+if (conflictData.schemaVersion !== 'pal-atlas.conflicts.v1') throw new Error('conflict registry schema mismatch');
+if (conflictData.evaluationStatus !== 'partial' || !conflictData.nullReason) throw new Error('cross-source comparison must fail closed while secondary claims are not machine ingested');
 if (breedingData.normalCount !== breedingData.normal.length) throw new Error('normal pair count mismatch');
 if (breedingData.meta.normalPairCount !== breedingData.normal.length || breedingData.meta.specialCount !== breedingData.special.length) throw new Error('breeding metadata mismatch');
 
@@ -48,6 +53,10 @@ for (const [parent, rows] of Object.entries(childrenData.outputs)) {
   if (!byId.has(parent) || rows.some((row) => row.parent !== parent || !byId.has(row.otherParent) || !byId.has(row.child))) throw new Error(`invalid reverse breeding row: ${parent}`);
 }
 
+for (const conflict of conflictData.conflicts ?? []) {
+  if (conflict.conflictStatus !== 'unresolved' || !conflict.nullReason) throw new Error(`invalid conflict row: ${conflict.id}`);
+}
+
 console.log(JSON.stringify({
   catalog: pals.length,
   eligibleChildren: eligible.length,
@@ -58,4 +67,7 @@ console.log(JSON.stringify({
   nearestRank: 'ok',
   images: pals.length,
   sources: sourceData.sources.length,
+  sourceTiers: 'ok',
+  conflictEvaluation: conflictData.evaluationStatus,
+  conflicts: conflictData.conflicts.length,
 }));
