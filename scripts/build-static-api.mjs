@@ -6,6 +6,7 @@ const palsData = JSON.parse(await readFile(`${ROOT}/data/pals.json`, 'utf8'));
 const breedingData = JSON.parse(await readFile(`${ROOT}/data/breeding.json`, 'utf8'));
 const childrenData = JSON.parse(await readFile(`${ROOT}/data/children.json`, 'utf8'));
 const sourceData = JSON.parse(await readFile(`${ROOT}/data/sources.json`, 'utf8'));
+const conflictData = JSON.parse(await readFile(`${ROOT}/data/conflicts.json`, 'utf8'));
 
 const writeJson = async (path, value) => {
   await mkdir(path.slice(0, path.lastIndexOf('/')), { recursive: true });
@@ -35,11 +36,13 @@ await writeJson(`${PUBLIC_API}/index.json`, {
     catalog: './pals.json',
     breeding: './breeding.json',
     sources: './sources.json',
+    conflicts: './conflicts.json',
     pal: './pals/{id}.json',
   },
 });
 await writeJson(`${PUBLIC_API}/pals.json`, { meta: palsData.meta, pals });
 await writeJson(`${PUBLIC_API}/sources.json`, sourceData);
+await writeJson(`${PUBLIC_API}/conflicts.json`, conflictData);
 await writeJson(`${PUBLIC_API}/breeding.json`, {
   meta: palsData.meta,
   normal: breedingData.normal ?? [],
