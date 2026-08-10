@@ -10,8 +10,11 @@ on:
       - data/**
       - public/**
       - metrics/**
-      - docs/embed.md
+      - docs/**
+      - ontology/**
+      - tests/**
       - scripts/**
+      - requirements-mcp.txt
       - package.json
       - package-lock.json
       - .github/workflows/deploy-pages.yml
@@ -39,6 +42,16 @@ jobs:
       - run: npm run data
       - run: npm run verify:data
       - run: npm run build
+      - name: Set up Python for MCP contract
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install MCP v2 test dependencies
+        run: python -m pip install -r requirements-mcp.txt
+      - name: Verify MCP syntax, discovery and static-data parity
+        run: |
+          python -m py_compile scripts/pal_mcp_read_model.py scripts/pal_mcp_server.py tests/test_pal_mcp_contract.py
+          pytest -q tests/test_pal_mcp_contract.py
       - name: Verify embed artifact
         run: |
           set -euo pipefail
@@ -142,7 +155,11 @@ jobs:
 
           curl --fail --silent --show-error --location "$base/api/index.json?smoke=${GITHUB_SHA}" -o "$tmp/api-index.json"
           curl --fail --silent --show-error --location "$base/api/pals/anubis.json?smoke=${GITHUB_SHA}" -o "$tmp/anubis.json"
+          curl --fail --silent --show-error --location "$base/api/sources.json?smoke=${GITHUB_SHA}" -o "$tmp/sources.json"
+          curl --fail --silent --show-error --location "$base/api/conflicts.json?smoke=${GITHUB_SHA}" -o "$tmp/conflicts.json"
           python -m json.tool "$tmp/api-index.json" >/dev/null
           python -m json.tool "$tmp/anubis.json" >/dev/null
+          python -m json.tool "$tmp/sources.json" >/dev/null
+          python -m json.tool "$tmp/conflicts.json" >/dev/null
 
           echo "Live Pages audit passed: $base/"
