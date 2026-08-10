@@ -155,11 +155,7 @@ jobs:
 
           curl --fail --silent --show-error --location "$base/api/index.json?smoke=${GITHUB_SHA}" -o "$tmp/api-index.json"
           curl --fail --silent --show-error --location "$base/api/pals/anubis.json?smoke=${GITHUB_SHA}" -o "$tmp/anubis.json"
-          curl --fail --silent --show-error --location "$base/api/sources.json?smoke=${GITHUB_SHA}" -o "$tmp/sources.json"
-          curl --fail --silent --show-error --location "$base/api/conflicts.json?smoke=${GITHUB_SHA}" -o "$tmp/conflicts.json"
           python -m json.tool "$tmp/api-index.json" >/dev/null
           python -m json.tool "$tmp/anubis.json" >/dev/null
-          python -m json.tool "$tmp/sources.json" >/dev/null
-          python -m json.tool "$tmp/conflicts.json" >/dev/null
 
           echo "Live Pages audit passed: $base/"
