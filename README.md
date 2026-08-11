@@ -15,8 +15,17 @@ Breeding Rank、通常配合、特殊配合を一つのデータ構造で扱い�
 - 目的のパルを作る配合候補を確認
 - 通常配合と特殊配合を区別して表示
 - 静的JSON APIから図鑑・配合データを再利用
+- 外部サイトへiframeで配合検索ウィジェットを埋め込み
 - Neo4j上で親子関係をグラフとして探索
 - 保存した配合を同じブラウザの`localStorage`に保持
+
+## 外部サイト向け配合ウィジェット
+
+公開ウィジェット: https://kafka2306.github.io/pal-atlas/embed/breed/
+
+`parentA` / `parentB` / `target`、`lang=ja|en`、検証済み形式の`partner` / `campaign`をURL parameterで指定できます。ウィジェットは正準の公開`api/pals.json`と`api/breeding.json`だけを読み、未解決の特殊配合や競合を確定結果へフォールバックしません。
+
+コピー&ペースト用iframe、計測イベント、attribution境界は [`docs/embed.md`](docs/embed.md) を参照してください。
 
 ## データの考え方
 
@@ -68,6 +77,7 @@ npm run api
 ## 主な構成
 
 - `src/` — データ取得、正規化、配合計算
+- `public/embed/breed/` — 外部埋め込み用の配合検索ウィジェット
 - `neo4j/` — Neo4jの構成と投入用データ
 - `dist/` — GitHub Pages向け生成物
 - `ontology/project.yaml` — 取得・計算・公開判定の証拠モデル
@@ -79,4 +89,4 @@ npm run api
 
 本プロジェクトはPocketpairとは関係のない非公式ファンプロジェクトです。名称・画像などの権利は各権利者に帰属します。
 
-**README最終監査:** 2026-08-01
+**README最終監査:** 2026-08-11
