@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import csv
 import json
 import sys
 from pathlib import Path
@@ -18,6 +19,11 @@ def load_data(name: str) -> dict:
 
 def load_public(name: str) -> dict:
     return json.loads((ROOT / "public" / "api" / name).read_text(encoding="utf-8"))
+
+
+def load_csv(name: str) -> list[dict[str, str]]:
+    with (ROOT / "neo4j" / name).open(encoding="utf-8", newline="") as handle:
+        return list(csv.DictReader(handle))
 
 
 def test_mcp_tool_catalog_is_discoverable() -> None:
@@ -130,3 +136,34 @@ def test_methodology_preserves_normal_special_boundary() -> None:
     assert methodology["conflict_evaluation_status"] == "partial"
     assert methodology["edinetdb_mode"] == "not_applicable"
     assert len(methodology["ontology_sha256"]) == 64
+
+
+def test_neo4j_import_artifacts_match_canonical_pal_and_breeding_data() -> None:
+    pals = load_data("pals.json")["pals"]
+    breeding = load_data("breeding.json")
+    neo4j_pals = load_csv("pals.csv")
+    neo4j_normal = load_csv("breeding_edges.csv")
+    neo4j_special = load_csv("special_edges.csv")
+
+    assert {row["id"] for row in neo4j_pals} == {row["id"] for row in pals}
+    assert {row["id"] for row in neo4j_normal} == {row["id"] for row in breeding["normal"]}
+    assert {row["id"] for row in neo4j_special} == {row["id"] for row in breeding["special"]}
+
+    pal_ids = {row["id"] for row in pals}
+    for row in neo4j_normal:
+        assert row["parentA"] in pal_ids
+        assert row["parentB"] in pal_ids
+        assert row["child"] in pal_ids
+        assert row["rule"] == "nearest-breeding-rank"
+    for row in neo4j_special:
+        if row["status"] == "resolved":
+            assert row["parentA"] in pal_ids
+            assert row["parentB"] in pal_ids
+            assert row["child"] in pal_ids
+
+    import_cypher = (ROOT / "neo4j" / "import.cypher").read_text(encoding="utf-8")
+    assert "LOAD CSV WITH HEADERS FROM 'file:///pals.csv'" in import_cypher
+    assert "LOAD CSV WITH HEADERS FROM 'file:///breeding_edges.csv'" in import_cypher
+    assert "LOAD CSV WITH HEADERS FROM 'file:///special_edges.csv'" in import_cypher
+    assert "BreedingPair" in import_cypher
+    assert "special" in import_cypher.lower()
