@@ -9,6 +9,7 @@ data/breeding.json
 data/children.json
 data/children-ui.json
 data/sources.json
+data/conflicts.json
 data/notes.json
 data/quality-notes.md
 neo4j/pals.csv
