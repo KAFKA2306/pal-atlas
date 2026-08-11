@@ -41,6 +41,8 @@ MCPは配合式を再計算しません。
 
 通常配合は `breeding.json:normal` のdeterministic resultを `result_kind=normal_formula` として返します。特殊配合は `breeding.json:special` を `result_kind=special_source` として返します。両者を同じ種類の事実として扱いません。
 
+Neo4jも別の配合ロジックを持ちません。`npm run data` が同じcanonical Pal / breedingデータから `neo4j/pals.csv`、`neo4j/breeding_edges.csv`、`neo4j/special_edges.csv` と `neo4j/import.cypher` を生成します。CIはcanonical JSONとNeo4j import artifactのID集合・参照整合・normal/special境界を比較し、static API / MCP / Neo4jの意味論が分岐した場合にfail-closeします。
+
 ## Source tiers
 
 `build-provenance.mjs` がrepository-owned policyとしてsource type/tierをmaterializeします。
@@ -94,4 +96,5 @@ Pal / breeding resultは該当範囲で次を返します。
 7. normal/special breed parity
 8. reverse index parity
 9. source/conflict static/MCP parity
-10. ontology SHA-256とEDINETDB boundary
+10. Neo4j generated importとcanonical Pal / normal breeding / special breedingのID・参照・意味論parity
+11. ontology SHA-256とEDINETDB boundary
