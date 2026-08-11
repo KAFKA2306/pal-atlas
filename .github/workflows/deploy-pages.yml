@@ -61,6 +61,8 @@ jobs:
           grep -F 'embed_loaded' dist/embed/breed/widget.js
           grep -F 'breed_searched' dist/embed/breed/widget.js
           grep -F 'pal_atlas_opened' dist/embed/breed/widget.js
+          grep -F '../../api/pals.json' dist/embed/breed/widget.js
+          grep -F '../../api/breeding.json' dist/embed/breed/widget.js
       - name: Verify pastel production artifact
         run: |
           set -euo pipefail
@@ -69,6 +71,10 @@ jobs:
           grep -R -F -- '--lavender:' dist/assets
           grep -R -F -- '--rose:' dist/assets
           grep -R -F -- '--mint:' dist/assets
+      - name: Verify clean checkout
+        run: |
+          rm -rf .pytest_cache scripts/__pycache__ tests/__pycache__
+          test -z "$(git status --porcelain --untracked-files=all)"
       - name: Configure Pages
         if: github.event_name != 'pull_request'
         uses: actions/configure-pages@v5
@@ -105,7 +111,7 @@ jobs:
             "https://api.github.com/repos/${GITHUB_REPOSITORY}/pages" \
             | jq '{html_url, status, build_type, source, public}'
 
-      - name: Verify the real public application
+      - name: Verify the real public application and embed
         shell: bash
         run: |
           set -euo pipefail
@@ -158,4 +164,23 @@ jobs:
           python -m json.tool "$tmp/api-index.json" >/dev/null
           python -m json.tool "$tmp/anubis.json" >/dev/null
 
-          echo "Live Pages audit passed: $base/"
+          curl --fail --silent --show-error --location \
+            "$base/embed/breed/?lang=ja&partner=ci&campaign=live-audit&smoke=${GITHUB_SHA}" \
+            -o "$tmp/embed.html"
+          grep -F 'id="widget"' "$tmp/embed.html"
+          grep -F './widget.js' "$tmp/embed.html"
+
+          curl --fail --silent --show-error --location "$base/embed/breed/widget.js?smoke=${GITHUB_SHA}" -o "$tmp/widget.js"
+          grep -F '非公式ファンプロジェクト' "$tmp/widget.js"
+          grep -F 'embed_loaded' "$tmp/widget.js"
+          grep -F 'breed_searched' "$tmp/widget.js"
+          grep -F 'pal_atlas_opened' "$tmp/widget.js"
+          grep -F '../../api/pals.json' "$tmp/widget.js"
+          grep -F '../../api/breeding.json' "$tmp/widget.js"
+
+          curl --fail --silent --show-error --location "$base/api/pals.json?smoke=${GITHUB_SHA}" -o "$tmp/pals.json"
+          curl --fail --silent --show-error --location "$base/api/breeding.json?smoke=${GITHUB_SHA}" -o "$tmp/breeding.json"
+          python -m json.tool "$tmp/pals.json" >/dev/null
+          python -m json.tool "$tmp/breeding.json" >/dev/null
+
+          echo "Live Pages and breeding embed audit passed: $base/"
