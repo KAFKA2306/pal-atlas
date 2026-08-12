@@ -19,6 +19,10 @@ Breeding Rank、通常配合、特殊配合を一つのデータ構造で扱い�
 - Neo4j上で親子関係をグラフとして探索
 - 保存した配合を同じブラウザの`localStorage`に保持
 
+## 正準フロー
+
+取得・provenance・検証・公開の責務と、主要KPI・非目標は [`docs/architecture/canonical-flow.md`](docs/architecture/canonical-flow.md) に固定しています。Neo4jや埋め込みwidgetを別の正準データ源にはしません。
+
 ## 外部サイト向け配合ウィジェット
 
 公開ウィジェット: https://kafka2306.github.io/pal-atlas/embed/breed/
@@ -89,4 +93,4 @@ npm run api
 
 本プロジェクトはPocketpairとは関係のない非公式ファンプロジェクトです。名称・画像などの権利は各権利者に帰属します。
 
-**README最終監査:** 2026-08-11
+**README最終監査:** 2026-08-12

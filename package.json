@@ -6,6 +6,7 @@
   "scripts": {
     "data": "node scripts/fetch-palworld-data.mjs && node scripts/build-provenance.mjs",
     "verify:data": "node scripts/verify-data.mjs",
+    "verify:ratchet": "node scripts/verify-repository-ratchet.mjs",
     "static-api": "node scripts/build-static-api.mjs",
     "test:embed": "node scripts/test-embed.mjs",
     "api": "node api/server.mjs",
