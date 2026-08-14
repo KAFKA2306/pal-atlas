@@ -1,0 +1,2223 @@
+
+===== biome =====
+api/server.mjs format ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Formatter would have printed the following content:
+  
+      1     │ - import·{·createServer·}·from·'node:http';
+          1 │ + import·{·createServer·}·from·"node:http";
+      2   2 │   
+      3   3 │   const port = Number(process.env.PORT ?? 8787);
+      4     │ - const·neo4jUrl·=·process.env.NEO4J_HTTP_URL·??·'http://127.0.0.1:7474';
+      5     │ - const·neo4jUser·=·process.env.NEO4J_USER·??·'neo4j';
+      6     │ - const·neo4jPassword·=·process.env.NEO4J_PASSWORD·??·'pal-atlas-dev';
+          4 │ + const·neo4jUrl·=·process.env.NEO4J_HTTP_URL·??·"http://127.0.0.1:7474";
+          5 │ + const·neo4jUser·=·process.env.NEO4J_USER·??·"neo4j";
+          6 │ + const·neo4jPassword·=·process.env.NEO4J_PASSWORD·??·"pal-atlas-dev";
+      7   7 │   
+      8   8 │   async function query(statement, parameters = {}) {
+      9   9 │     const response = await fetch(`${neo4jUrl}/db/neo4j/tx/commit`, {
+     10     │ - ····method:·'POST',
+         10 │ + ····method:·"POST",
+     11  11 │       headers: {
+     12     │ - ······authorization:·`Basic·${Buffer.from(`${neo4jUser}:${neo4jPassword}`).toString('base64')}`,
+     13     │ - ······'content-type':·'application/json',
+         12 │ + ······authorization:·`Basic·${Buffer.from(`${neo4jUser}:${neo4jPassword}`).toString("base64")}`,
+         13 │ + ······"content-type":·"application/json",
+     14  14 │       },
+     15  15 │       body: JSON.stringify({ statements: [{ statement, parameters }] }),
+     16  16 │     });
+     17  17 │     const body = await response.json();
+     18     │ - ··if·(!response.ok·||·body.errors?.length)·throw·new·Error(body.errors?.[0]?.message·??·`Neo4j·HTTP·${response.status}`);
+         18 │ + ··if·(!response.ok·||·body.errors?.length)
+         19 │ + ····throw·new·Error(
+         20 │ + ······body.errors?.[0]?.message·??·`Neo4j·HTTP·${response.status}`,
+         21 │ + ····);
+     19  22 │     const result = body.results[0];
+     20     │ - ··return·result.data.map(({·row·})·=>·Object.fromEntries(result.columns.map((column,·index)·=>·[column,·row[index]])));
+         23 │ + ··return·result.data.map(({·row·})·=>
+         24 │ + ····Object.fromEntries(
+         25 │ + ······result.columns.map((column,·index)·=>·[column,·row[index]]),
+         26 │ + ····),
+         27 │ + ··);
+     21  28 │   }
+     22  29 │   
+     23  30 │   function json(response, status, body) {
+     24     │ - ··response.writeHead(status,·{·'access-control-allow-origin':·'*',·'content-type':·'application/json;·charset=utf-8',·'cache-control':·'no-store'·});
+         31 │ + ··response.writeHead(status,·{
+         32 │ + ····"access-control-allow-origin":·"*",
+         33 │ + ····"content-type":·"application/json;·charset=utf-8",
+         34 │ + ····"cache-control":·"no-store",
+         35 │ + ··});
+     25  36 │     response.end(JSON.stringify(body));
+     26  37 │   }
+     27  38 │   
+     28  39 │   function limit(url, maximum = 200) {
+     29     │ - ··return·Math.min(Math.max(Number(url.searchParams.get('limit')·??·50)·||·50,·1),·maximum);
+         40 │ + ··return·Math.min(
+         41 │ + ····Math.max(Number(url.searchParams.get("limit")·??·50)·||·50,·1),
+         42 │ + ····maximum,
+         43 │ + ··);
+     30  44 │   }
+     31  45 │   
+     32  46 │   async function route(request, response) {
+     33  47 │     const url = new URL(request.url, `http://${request.headers.host}`);
+     34     │ - ··if·(request.method·===·'OPTIONS')·return·json(response,·204,·{});
+     35     │ - ··if·(!url.pathname.startsWith('/api/'))·return·json(response,·404,·{·error:·'not_found'·});
+         48 │ + ··if·(request.method·===·"OPTIONS")·return·json(response,·204,·{});
+         49 │ + ··if·(!url.pathname.startsWith("/api/"))
+         50 │ + ····return·json(response,·404,·{·error:·"not_found"·});
+     36  51 │   
+     37     │ - ··if·(url.pathname·===·'/api/health')·{
+     38     │ - ····await·query('RETURN·1·AS·ok');
+     39     │ - ····return·json(response,·200,·{·ok:·true,·database:·'neo4j'·});
+         52 │ + ··if·(url.pathname·===·"/api/health")·{
+         53 │ + ····await·query("RETURN·1·AS·ok");
+         54 │ + ····return·json(response,·200,·{·ok:·true,·database:·"neo4j"·});
+     40  55 │     }
+     41  56 │   
+     42     │ - ··if·(url.pathname·===·'/api/pals')·{
+     43     │ - ····const·q·=·url.searchParams.get('q')·??·'';
+     44     │ - ····const·element·=·url.searchParams.get('element')·??·'';
+     45     │ - ····const·rows·=·await·query(`
+         57 │ + ··if·(url.pathname·===·"/api/pals")·{
+         58 │ + ····const·q·=·url.searchParams.get("q")·??·"";
+         59 │ + ····const·element·=·url.searchParams.get("element")·??·"";
+         60 │ + ····const·rows·=·await·query(
+         61 │ + ······`
+     46  62 │         MATCH (p:Pal)
+     47  63 │         WHERE ($q = '' OR toLower(p.nameEn) CONTAINS toLower($q) OR toLower(p.nameJa) CONTAINS toLower($q))
+    ······· │ 
+     49  65 │         RETURN p.id AS id, p.nameEn AS nameEn, p.nameJa AS nameJa, p.elements AS elements, p.breedingRank AS breedingRank, p.imageUrl AS imageUrl, p.imageOriginalUrl AS imageOriginalUrl, p.imageReferenceUrl AS imageReferenceUrl, p.imageWebpUrl AS imageWebpUrl, p.imageMime AS imageMime, p.imageDelivery AS imageDelivery
+     50  66 │         ORDER BY p.breedingRank, p.sourceIndex, p.order
+     51     │ - ······LIMIT·$limit`,·{·q,·element,·limit:·limit(url)·});
+         67 │ + ······LIMIT·$limit`,
+         68 │ + ······{·q,·element,·limit:·limit(url)·},
+         69 │ + ····);
+     52  70 │       return json(response, 200, rows);
+     53  71 │     }
+    ······· │ 
+     55  73 │     const recipeMatch = url.pathname.match(/^\/api\/pals\/([^/]+)\/recipes$/);
+     56  74 │     if (recipeMatch) {
+     57     │ - ····const·rows·=·await·query(`
+         75 │ + ····const·rows·=·await·query(
+         76 │ + ······`
+     58  77 │         MATCH (pair:BreedingPair)-[:PRODUCES]->(child:Pal {id: $id})
+     59  78 │         MATCH (a:Pal)-[:PARENT_A]->(pair)
+    ······· │ 
+     64  83 │           child.id AS child, child.nameEn AS childEn, child.nameJa AS childJa, child.breedingRank AS childRank
+     65  84 │         ORDER BY CASE pair.kind WHEN 'special' THEN 0 ELSE 1 END, pair.intermediatePower, pair.id
+     66     │ - ······LIMIT·$limit`,·{·id:·recipeMatch[1],·limit:·limit(url)·});
+         85 │ + ······LIMIT·$limit`,
+         86 │ + ······{·id:·recipeMatch[1],·limit:·limit(url)·},
+         87 │ + ····);
+     67  88 │       return json(response, 200, rows);
+     68  89 │     }
+    ······· │ 
+     70  91 │     const outputMatch = url.pathname.match(/^\/api\/pals\/([^/]+)\/outputs$/);
+     71  92 │     if (outputMatch) {
+     72     │ - ····const·rows·=·await·query(`
+         93 │ + ····const·rows·=·await·query(
+         94 │ + ······`
+     73  95 │         CALL {
+     74  96 │           MATCH (parent:Pal {id: $id})-[:PARENT_A]->(pair:BreedingPair)-[:PRODUCES]->(child:Pal)
+    ······· │ 
+     89 111 │         RETURN pairId, kind, specialKind, intermediatePower, rule, parent, parentEn, parentJa, otherParent, otherParentEn, otherParentJa, otherParentRank, child, childEn, childJa, childRank
+     90 112 │         ORDER BY CASE kind WHEN 'special' THEN 0 ELSE 1 END, childRank, pairId
+     91     │ - ······LIMIT·$limit`,·{·id:·outputMatch[1],·limit:·limit(url,·500)·});
+        113 │ + ······LIMIT·$limit`,
+        114 │ + ······{·id:·outputMatch[1],·limit:·limit(url,·500)·},
+        115 │ + ····);
+     92 116 │       return json(response, 200, rows);
+     93 117 │     }
+    ······· │ 
+     95 119 │     const palMatch = url.pathname.match(/^\/api\/pals\/([^/]+)$/);
+     96 120 │     if (palMatch) {
+     97     │ - ····const·rows·=·await·query(`
+        121 │ + ····const·rows·=·await·query(
+        122 │ + ······`
+     98 123 │         MATCH (p:Pal {id: $id})
+     99     │ - ...y·AS·imageDelivery,·p.ignoreCombi·AS·ignoreCombi`,·{·id:·palMatch[1]·});
+    100     │ - ····return·rows[0]·?·json(response,·200,·rows[0])·:·json(response,·404,·{·error:·'pal_not_found'·});
+        124 │ + ······RETURN·p.id·AS·id,·p.nameEn·AS·nameEn,·p.nameJa·AS·nameJa,·p.elements·AS·elements,·p.rarity·AS·rarity,·p.rarityTier·AS·rarityTier,·p.breedingRank·AS·breedingRank,·p.imageUrl·AS·imageUrl,·p.imageOriginalUrl·AS·imageOriginalUrl,·p.imageReferenceUrl·AS·imageReferenceUrl,·p.imageWebpUrl·AS·imageWebpUrl,·p.imageMime·AS·imageMime,·p.imageDelivery·AS·imageDelivery,·p.ignoreCombi·AS·ignoreCombi`,
+        125 │ + ······{·id:·palMatch[1]·},
+        126 │ + ····);
+        127 │ + ····return·rows[0]
+        128 │ + ······?·json(response,·200,·rows[0])
+        129 │ + ······:·json(response,·404,·{·error:·"pal_not_found"·});
+    101 130 │     }
+    102 131 │   
+    103     │ - ··const·breedMatch·=·url.pathname·===·'/api/breed'·?·url.searchParams·:·null;
+    104     │ - ··if·(breedMatch?.get('parentA')·&&·breedMatch.get('parentB'))·{
+    105     │ - ····const·rows·=·await·query(`
+        132 │ + ··const·breedMatch·=·url.pathname·===·"/api/breed"·?·url.searchParams·:·null;
+        133 │ + ··if·(breedMatch?.get("parentA")·&&·breedMatch.get("parentB"))·{
+        134 │ + ····const·rows·=·await·query(
+        135 │ + ······`
+    106 136 │         MATCH (a:Pal {id: $a})-[:PARENT_A]->(pair:BreedingPair)-[:PRODUCES]->(child:Pal)
+    107 137 │         MATCH (b:Pal {id: $b})-[:PARENT_B]->(pair)
+    ······· │ 
+    110 140 │         MATCH (a:Pal {id: $a})-[:PARENT_B]->(pair:BreedingPair)-[:PRODUCES]->(child:Pal)
+    111 141 │         MATCH (b:Pal {id: $b})-[:PARENT_A]->(pair)
+    112     │ - ······RETURN·pair.id·AS·pairId,·pair.kind·AS·kind,·pair.specialKind·AS·specialKind,·pair.intermediatePower·AS·intermediatePower,·child.id·AS·child,·child.nameEn·AS·childEn,·child.nameJa·AS·childJa,·child.breedingRank·AS·childRank`,·{·a:·breedMatch.get('parentA'),·b:·breedMatch.get('parentB')·});
+        142 │ + ······RETURN·pair.id·AS·pairId,·pair.kind·AS·kind,·pair.specialKind·AS·specialKind,·pair.intermediatePower·AS·intermediatePower,·child.id·AS·child,·child.nameEn·AS·childEn,·child.nameJa·AS·childJa,·child.breedingRank·AS·childRank`,
+  17 more lines truncated
+  
+
+navigate/kafka-signal.js format ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Formatter would have printed the following content:
+  
+    1    │ - ...=>{'use·strict';const·release='kafka-signal-v1.0.0',store='pal-navigator-saved';let·timer;const·get=...
+       1 │ + (()·=>·{
+       2 │ + ··"use·strict";
+       3 │ + ··const·release·=·"kafka-signal-v1.0.0",
+       4 │ + ····store·=·"pal-navigator-saved";
+       5 │ + ··let·timer;
+       6 │ + ··const·get·=·()·=>·{
+       7 │ + ····try·{
+       8 │ + ······return·new·Set(JSON.parse(localStorage.getItem(store)·||·"[]"));
+       9 │ + ····}·catch·{
+      10 │ + ······return·new·Set();
+      11 │ + ····}
+      12 │ + ··};
+      13 │ + ··const·put·=·(set)·=>·localStorage.setItem(store,·JSON.stringify([...set]));
+      14 │ + ··function·toast(message,·restore)·{
+      15 │ + ····document.querySelector(".undo-toast")?.remove();
+      16 │ + ····const·box·=·document.createElement("div");
+      17 │ + ····box.className·=·"undo-toast";
+      18 │ + ····box.setAttribute("role",·"status");
+      19 │ + ····box.innerHTML·=·`<span>${message}</span><button·type="button">元に戻す</button>`;
+      20 │ + ····box.querySelector("button").addEventListener("click",·()·=>·{
+      21 │ + ······restore();
+      22 │ + ······box.remove();
+      23 │ + ····});
+      24 │ + ····document.body.append(box);
+      25 │ + ····clearTimeout(timer);
+      26 │ + ····timer·=·setTimeout(()·=>·box.remove(),·6000);
+      27 │ + ··}
+      28 │ + ··function·explain(node)·{
+      29 │ + ····if·(node.dataset.ksExplained)·return;
+      30 │ + ····node.dataset.ksExplained·=·"1";
+      31 │ + ····const·kind·=·node.querySelector("small")?.textContent·||·"";
+      32 │ + ····const·details·=·document.createElement("details");
+      33 │ + ····details.className·=·"formula-explanation";
+      34 │ + ····details.innerHTML·=·`<summary>式・出典を確認</summary><p>${kind.includes("特殊配合")·?·"特殊配合として正準データに定義された組合せです。"·:·"通常配合として、正準データに記録された親の配合値・中間値または差に基づく経路です。"}·表示値は画像推定ではありません。<a·href="../api/breeding.json"·target="_blank"·rel="noreferrer">配合データを開く</a></p>`;
+      35 │ + ····node.append(details);
+      36 │ + ····const·save·=·node.querySelector(".save-recipe");
+      37 │ + ····if·(save)
+      38 │ + ······save.addEventListener("click",·()·=>·{
+      39 │ + ········queueMicrotask(()·=>·{
+      40 │ + ··········const·key·=·`recipe:${node.dataset.recipe}`;
+      41 │ + ··········if·(!get().has(key))
+      42 │ + ············toast("保存した配合を削除しました。",·()·=>·{
+      43 │ + ··············const·set·=·get();
+      44 │ + ··············set.add(key);
+      45 │ + ··············put(set);
+      46 │ + ··············location.reload();
+      47 │ + ············});
+      48 │ + ········});
+      49 │ + ······});
+      50 │ + ··}
+      51 │ + ··function·install()·{
+      52 │ + ····document.documentElement.dataset.kafkaSignal·=·release;
+      53 │ + ····const·lists·=·document.querySelectorAll(".recipe-list");
+      54 │ + ····lists.forEach((list)·=>·{
+      55 │ + ······new·MutationObserver(()·=>
+      56 │ + ········list.querySelectorAll(".recipe").forEach(explain),
+      57 │ + ······).observe(list,·{·childList:·true,·subtree:·true·});
+      58 │ + ······list.querySelectorAll(".recipe").forEach(explain);
+      59 │ + ····});
+      60 │ + ····const·clear·=·document.querySelector("#clear-saved");
+      61 │ + ····if·(clear)
+      62 │ + ······clear.addEventListener("click",·()·=>·{
+      63 │ + ········const·before·=·[...get()].filter((v)·=>·v.startsWith("pal:"));
+      64 │ + ········if·(before.length)
+      65 │ + ··········queueMicrotask(()·=>
+      66 │ + ············toast(`${before.length}件の保存パルを削除しました。`,·()·=>·{
+      67 │ + ··············const·set·=·get();
+      68 │ + ··············before.forEach((v)·=>·set.add(v));
+      69 │ + ··············put(set);
+      70 │ + ··············location.reload();
+      71 │ + ············}),
+      72 │ + ··········);
+      73 │ + ······});
+      74 │ + ····const·footer·=·document.querySelector("footer");
+      75 │ + ····if·(footer·&&·!footer.querySelector(".ks-version"))·{
+      76 │ + ······const·p·=·document.createElement("p");
+      77 │ + ······p.className·=·"ks-version";
+      78 │ + ······p.textContent·=·`KAFKA·SIGNAL·${release}···6cceef70`;
+      79 │ + ······footer.append(p);
+      80 │ + ····}
+      81 │ + ··}
+      82 │ + ··if·(document.readyState·===·"loading")
+      83 │ + ····document.addEventListener("DOMContentLoaded",·install);
+      84 │ + ··else·install();
+      85 │ + })();
+    2 86 │   
+  
+
+navigate/navigate.js format ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Formatter would have printed the following content:
+  
+    1     │ - (()=>{'use·strict';const·state={pals:[],byId:new·Map,breeding:null,outputs:null,pal:'',q:'',element:...
+        1 │ + (()·=>·{
+        2 │ + ··"use·strict";
+        3 │ + ··const·state·=·{
+        4 │ + ····pals:·[],
+        5 │ + ····byId:·new·Map(),
+        6 │ + ····breeding:·null,
+        7 │ + ····outputs:·null,
+        8 │ + ····pal:·"",
+        9 │ + ····q:·"",
+       10 │ + ····element:·"all",
+       11 │ + ····view:·"both",
+       12 │ + ····lastFocus:·"",
+       13 │ + ····scrollY:·0,
+       14 │ + ··};
+       15 │ + ··const·$·=·(s)·=>·document.querySelector(s);
+       16 │ + ··const·esc·=·(v·=·"")·=>
+       17 │ + ····String(v).replace(
+       18 │ + ······/[&<>'"]/g,
+       19 │ + ······(c)·=>
+       20 │ + ········({
+       21 │ + ··········"&":·"&amp;",
+       22 │ + ··········"<":·"&lt;",
+       23 │ + ··········">":·"&gt;",
+       24 │ + ··········"'":·"&#39;",
+       25 │ + ··········'"':·"&quot;",
+       26 │ + ········})[c],
+       27 │ + ····);
+       28 │ + ··const·norm·=·(v)·=>
+       29 │ + ····String(v·||·"")
+       30 │ + ······.normalize("NFKC")
+       31 │ + ······.toLocaleLowerCase("ja");
+       32 │ + ··const·id·=·(p)·=>·String(p?.id·||·p?.pal_id·||·p?.key·||·"");
+       33 │ + ··const·name·=·(p)·=>
+       34 │ + ····String(p?.nameJa·||·p?.name_ja·||·p?.name·||·p?.nameEn·||·id(p));
+       35 │ + ··const·altName·=·(p)·=>·String(p?.nameEn·||·p?.name_en·||·"");
+       36 │ + ··const·rank·=·(p)·=>·p?.breedingRank·??·p?.breeding_rank·??·"—";
+       37 │ + ··const·image·=·(p)·=>
+       38 │ + ····String(p?.imageWebpUrl·||·p?.image_url·||·p?.imageUrl·||·"");
+       39 │ + ··const·elements·=·(p)·=>
+       40 │ + ····Array.isArray(p?.elements)
+       41 │ + ······?·p.elements
+       42 │ + ······:·Array.isArray(p?.element)
+       43 │ + ········?·p.element
+       44 │ + ········:·[p?.element].filter(Boolean);
+       45 │ + ··function·readUrl()·{
+       46 │ + ····const·p·=·new·URLSearchParams(location.search);
+       47 │ + ····state.pal·=·p.get("pal")·||·"";
+       48 │ + ····state.q·=·p.get("q")·||·"";
+       49 │ + ····state.element·=·p.get("element")·||·"all";
+       50 │ + ····state.view·=·p.get("view")·||·"both";
+       51 │ + ··}
+       52 │ + ··function·writeUrl(push·=·false)·{
+       53 │ + ····const·p·=·new·URLSearchParams();
+       54 │ + ····if·(state.pal)·p.set("pal",·state.pal);
+       55 │ + ····if·(state.q)·p.set("q",·state.q);
+       56 │ + ····if·(state.element·!==·"all")·p.set("element",·state.element);
+       57 │ + ····if·(state.view·!==·"both")·p.set("view",·state.view);
+       58 │ + ····history[push·?·"pushState"·:·"replaceState"](
+       59 │ + ······{·pal:·state.pal,·focus:·state.lastFocus,·scrollY:·window.scrollY·},
+       60 │ + ······"",
+       61 │ + ······`${location.pathname}${p.size·?·`?${p}`·:·""}`,
+       62 │ + ····);
+       63 │ + ··}
+       64 │ + ··function·saved()·{
+       65 │ + ····try·{
+       66 │ + ······return·new·Set(
+       67 │ + ········JSON.parse(localStorage.getItem("pal-navigator-saved")·||·"[]"),
+       68 │ + ······);
+       69 │ + ····}·catch·{
+       70 │ + ······return·new·Set();
+       71 │ + ····}
+       72 │ + ··}
+       73 │ + ··function·saveSet(set)·{
+       74 │ + ····localStorage.setItem("pal-navigator-saved",·JSON.stringify([...set]));
+       75 │ + ··}
+       76 │ + ··async·function·json(url)·{
+       77 │ + ····const·r·=·await·fetch(url,·{·cache:·"no-store"·});
+       78 │ + ····if·(!r.ok)·throw·new·Error(`${url}:·HTTP·${r.status}`);
+       79 │ + ····return·r.json();
+       80 │ + ··}
+       81 │ + ··function·palsFrom(d)·{
+       82 │ + ····for·(const·v·of·[d?.pals,·d?.items,·d?.data,·d])
+       83 │ + ······if·(Array.isArray(v))·return·v;
+       84 │ + ····return·[];
+       85 │ + ··}
+       86 │ + ··function·filtered()·{
+       87 │ + ····const·q·=·norm(state.q.trim());
+       88 │ + ····return·state.pals
+       89 │ + ······.filter(
+       90 │ + ········(p)·=>
+       91 │ + ··········(!q·||·norm(`${name(p)}·${altName(p)}`).includes(q))·&&
+       92 │ + ··········(state.element·===·"all"·||·elements(p).includes(state.element)),
+       93 │ + ······)
+       94 │ + ······.sort((a,·b)·=>·Number(rank(a))·-·Number(rank(b)));
+       95 │ + ··}
+       96 │ + ··function·selectPal(palId,·{·push·=·true,·focus·=·true·}·=·{})·{
+       97 │ + ····const·target·=·state.byId.get(palId);
+       98 │ + ····if·(!target)·return;
+       99 │ + ····state.pal·=·palId;
+      100 │ + ····state.lastFocus·=·`pal-${palId}`;
+      101 │ + ····writeUrl(push);
+      102 │ + ····renderCatalog();
+      103 │ + ····renderDetail();
+      104 │ + ····if·(focus)·{
+      105 │ + ······$("#detail").focus();
+      106 │ + ······$("#detail").scrollIntoView({
+      107 │ + ········behavior:·matchMedia("(prefers-reduced-motion:reduce)").matches
+      108 │ + ··········?·"auto"
+      109 │ + ··········:·"smooth",
+      110 │ + ········block:·"start",
+      111 │ + ······});
+      112 │ + ····}
+      113 │ + ··}
+      114 │ + ··function·card(p)·{
+      115 │ + ····const·node·=·$("#pal-card").content.firstElementChild.cloneNode(true);
+      116 │ + ····node.id·=·`pal-${id(p)}`;
+      117 │ + ····node.dataset.pal·=·id(p);
+      118 │ + ····node.setAttribute("aria-current",·String(id(p)·===·state.pal));
+      119 │ + ····const·img·=·node.querySelector("img");
+      120 │ + ····img.src·=·image(p);
+      121 │ + ····img.alt·=·image(p)·?·`${name(p)}の画像`·:·"";
+      122 │ + ····img.addEventListener("error",·()·=>·(img.hidden·=·true));
+      123 │ + ····node.querySelector("strong").textContent·=·name(p);
+      124 │ + ····node.querySelector("small").textContent·=·altName(p);
+      125 │ + ····node.querySelector("b").textContent·=·rank(p);
+      126 │ + ····node.addEventListener("click",·()·=>·{
+      127 │ + ······state.scrollY·=·window.scrollY;
+      128 │ + ······selectPal(id(p),·{·push:·true·});
+      129 │ + ····});
+      130 │ + ····return·node;
+      131 │ + ··}
+      132 │ + ··function·renderCatalog()·{
+      133 │ + ····const·list·=·filtered();
+      134 │ + ····$("#grid").replaceChildren(...list.map(card));
+      135 │ + ····$("#empty").hidden·=·list.length·!==·0;
+      136 │ + ····$("#catalog-summary").textContent·=
+      137 │ + ······`${list.length}件·/·全${state.pals.length}件`;
+      138 │ + ····$("#result-count").textContent·=·`${list.length}件表示`;
+      139 │ + ··}
+      140 │ + ··function·specialParents(palId)·{
+      141 │ + ····return·(state.breeding?.special·||·[])
+      142 │ + ······.filter(
+      143 │ + ········(r)·=>
+      144 │ + ··········(r.status·===·undefined·||·r.status·===·"resolved")·&&
+      145 │ + ··········(r.child·===·palId·||·r.child_id·===·palId),
+      146 │ + ······)
+      147 │ + ······.map((r)·=>·({
+      148 │ + ········id:·r.id·||·`${r.parentA}-${r.parentB}-${palId}`,
+      149 │ + ········kind:·"special",
+  232 more lines truncated
+  
+
+public/embed/breed/widget.css format ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Formatter would have printed the following content:
+  
+    1     │ - :root{font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe·UI",sans-ser...
+        1 │ + :root·{
+        2 │ + ··font-family:
+        3 │ + ····Inter,·ui-sans-serif,·system-ui,·-apple-system,·BlinkMacSystemFont,
+        4 │ + ····"Segoe·UI",·sans-serif;
+        5 │ + ··color:·#eef2ff;
+        6 │ + ··background:·#111827;
+        7 │ + }
+        8 │ + *·{
+        9 │ + ··box-sizing:·border-box;
+       10 │ + }
+       11 │ + body·{
+       12 │ + ··margin:·0;
+       13 │ + }
+       14 │ + main·{
+       15 │ + ··max-width:·760px;
+       16 │ + ··margin:·auto;
+       17 │ + ··padding:·18px;
+       18 │ + ··display:·grid;
+       19 │ + ··gap:·14px;
+       20 │ + }
+       21 │ + header·span·{
+       22 │ + ··font-size:·0.72rem;
+       23 │ + ··letter-spacing:·0.18em;
+       24 │ + ··color:·#a5b4fc;
+       25 │ + }
+       26 │ + h1·{
+       27 │ + ··font-size:·1.35rem;
+       28 │ + ··margin:·0.2rem·0·0;
+       29 │ + }
+       30 │ + h2·{
+       31 │ + ··font-size:·0.92rem;
+       32 │ + ··margin:·0·0·10px;
+       33 │ + ··color:·#c7d2fe;
+       34 │ + }
+       35 │ + section·{
+       36 │ + ··border:·1px·solid·#334155;
+       37 │ + ··border-radius:·16px;
+       38 │ + ··padding:·14px;
+       39 │ + ··background:·#182235;
+       40 │ + }
+       41 │ + .controls·{
+       42 │ + ··display:·grid;
+       43 │ + ··grid-template-columns:·minmax(0,·1fr)·auto·minmax(0,·1fr)·auto;
+       44 │ + ··gap:·8px;
+       45 │ + ··align-items:·center;
+       46 │ + }
+       47 │ + .controls:has(#target)·{
+       48 │ + ··grid-template-columns:·minmax(0,·1fr)·auto;
+       49 │ + }
+       50 │ + select,
+       51 │ + button·{
+       52 │ + ··min-height:·42px;
+       53 │ + ··border-radius:·10px;
+       54 │ + ··border:·1px·solid·#475569;
+       55 │ + ··background:·#0f172a;
+       56 │ + ··color:·inherit;
+       57 │ + ··padding:·8px·10px;
+       58 │ + }
+       59 │ + button·{
+       60 │ + ··cursor:·pointer;
+       61 │ + ··background:·#4338ca;
+       62 │ + ··border-color:·#6366f1;
+       63 │ + ··font-weight:·700;
+       64 │ + }
+       65 │ + .result·{
+       66 │ + ··display:·grid;
+       67 │ + ··gap:·8px;
+       68 │ + ··margin-top:·12px;
+       69 │ + ··min-height:·1.5rem;
+       70 │ + }
+       71 │ + .result·strong·{
+       72 │ + ··font-size:·1.05rem;
+       73 │ + }
+       74 │ + .result·small·{
+       75 │ + ··color:·#cbd5e1;
+       76 │ + }
+       77 │ + .result·ul·{
+       78 │ + ··margin:·0;
+       79 │ + ··padding-left:·1.25rem;
+       80 │ + ··display:·grid;
+       81 │ + ··gap:·5px;
+       82 │ + }
+       83 │ + .badge·{
+       84 │ + ··display:·inline-flex;
+       85 │ + ··width:·max-content;
+       86 │ + ··border-radius:·999px;
+       87 │ + ··background:·#312e81;
+       88 │ + ··color:·#e0e7ff;
+       89 │ + ··padding:·3px·8px;
+       90 │ + ··font-size:·0.74rem;
+       91 │ + }
+       92 │ + .result·a·{
+       93 │ + ··color:·#a5b4fc;
+       94 │ + ··width:·max-content;
+       95 │ + }
+       96 │ + footer·{
+       97 │ + ··font-size:·0.76rem;
+       98 │ + ··color:·#94a3b8;
+       99 │ + ··line-height:·1.5;
+      100 │ + }
+      101 │ + @media·(max-width:·620px)·{
+      102 │ + ··main·{
+      103 │ + ····padding:·12px;
+      104 │ + ··}
+      105 │ + ··.controls·{
+      106 │ + ····grid-template-columns:·1fr;
+      107 │ + ··}
+      108 │ + ··.controls·>·span·{
+      109 │ + ····text-align:·center;
+      110 │ + ··}
+      111 │ + ··.controls:has(#target)·{
+      112 │ + ····grid-template-columns:·1fr;
+      113 │ + ··}
+      114 │ + }
+    2 115 │   
+  
+
+public/embed/breed/widget.js format ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Formatter would have printed the following content:
+  
+     1   1 │   const ATTRIBUTION_RE = /^[A-Za-z0-9._-]{1,64}$/;
+     2     │ - export·function·normalizeAttribution(value)·{·return·ATTRIBUTION_RE.test(value·??·'')·?·value·:·null;·}
+     3     │ - export·function·samePair(row,·parentA,·parentB)·{·return·(row.parentA·===·parentA·&&·row.parentB·===·parentB)·||·(row.parentA·===·parentB·&&·row.parentB·===·parentA);·}
+         2 │ + export·function·normalizeAttribution(value)·{
+         3 │ + ··return·ATTRIBUTION_RE.test(value·??·"")·?·value·:·null;
+         4 │ + }
+         5 │ + export·function·samePair(row,·parentA,·parentB)·{
+         6 │ + ··return·(
+         7 │ + ····(row.parentA·===·parentA·&&·row.parentB·===·parentB)·||
+         8 │ + ····(row.parentA·===·parentB·&&·row.parentB·===·parentA)
+         9 │ + ··);
+        10 │ + }
+     4  11 │   export function resolvePair(breeding, parentA, parentB) {
+     5     │ - ··if·(!parentA·||·!parentB)·return·{·status:·'INVALID'·};
+     6     │ - ··const·matchingSpecial·=·(breeding.special·??·[]).filter((row)·=>·samePair(row,·parentA,·parentB));
+        12 │ + ··if·(!parentA·||·!parentB)·return·{·status:·"INVALID"·};
+        13 │ + ··const·matchingSpecial·=·(breeding.special·??·[]).filter((row)·=>
+        14 │ + ····samePair(row,·parentA,·parentB),
+        15 │ + ··);
+     7  16 │     if (matchingSpecial.length) {
+     8     │ - ····const·resolved·=·matchingSpecial.filter((row)·=>·row.status·===·'resolved'·&&·row.child);
+        17 │ + ····const·resolved·=·matchingSpecial.filter(
+        18 │ + ······(row)·=>·row.status·===·"resolved"·&&·row.child,
+        19 │ + ····);
+     9  20 │       const children = [...new Set(resolved.map((row) => row.child))];
+    10     │ - ····if·(children.length·===·1·&&·resolved.length·===·matchingSpecial.length)·return·{·status:·'MATCH',·kind:·'special',·child:·children[0]·};
+    11     │ - ····return·{·status:·'REVIEW_REQUIRED',·reason:·'unresolved_special_recipe'·};
+        21 │ + ····if·(children.length·===·1·&&·resolved.length·===·matchingSpecial.length)
+        22 │ + ······return·{·status:·"MATCH",·kind:·"special",·child:·children[0]·};
+        23 │ + ····return·{·status:·"REVIEW_REQUIRED",·reason:·"unresolved_special_recipe"·};
+    12  24 │     }
+    13     │ - ··const·matchingNormal·=·(breeding.normal·??·[]).filter((row)·=>·samePair(row,·parentA,·parentB)·&&·row.child);
+        25 │ + ··const·matchingNormal·=·(breeding.normal·??·[]).filter(
+        26 │ + ····(row)·=>·samePair(row,·parentA,·parentB)·&&·row.child,
+        27 │ + ··);
+    14  28 │     const children = [...new Set(matchingNormal.map((row) => row.child))];
+    15     │ - ··if·(children.length·===·1)·return·{·status:·'MATCH',·kind:·'normal',·child:·children[0]·};
+    16     │ - ··if·(children.length·>·1)·return·{·status:·'REVIEW_REQUIRED',·reason:·'conflicting_normal_recipe'·};
+    17     │ - ··return·{·status:·'UNKNOWN'·};
+        29 │ + ··if·(children.length·===·1)
+        30 │ + ····return·{·status:·"MATCH",·kind:·"normal",·child:·children[0]·};
+        31 │ + ··if·(children.length·>·1)
+        32 │ + ····return·{·status:·"REVIEW_REQUIRED",·reason:·"conflicting_normal_recipe"·};
+        33 │ + ··return·{·status:·"UNKNOWN"·};
+    18  34 │   }
+    19  35 │   export function findTargetRecipes(breeding, target) {
+    20  36 │     if (!target) return [];
+    21  37 │     const rows = [];
+    22     │ - ··for·(const·row·of·breeding.special·??·[])·if·(row.child·===·target·&&·row.status·===·'resolved')·rows.push({·...row,·kind:·'special'·});
+    23     │ - ··for·(const·row·of·breeding.normal·??·[])·if·(row.child·===·target)·rows.push({·...row,·kind:·'normal'·});
+        38 │ + ··for·(const·row·of·breeding.special·??·[])
+        39 │ + ····if·(row.child·===·target·&&·row.status·===·"resolved")
+        40 │ + ······rows.push({·...row,·kind:·"special"·});
+        41 │ + ··for·(const·row·of·breeding.normal·??·[])
+        42 │ + ····if·(row.child·===·target)·rows.push({·...row,·kind:·"normal"·});
+    24  43 │     return rows;
+    25  44 │   }
+    26     │ - function·esc(value)·{·return·String(value).replace(/[&<>"']/g,·(char)·=>·({·'&':·'&amp;',·'<':·'&lt;',·'>':·'&gt;',·'"':·'&quot;',·"'":·'&#39;'·})[char]);·}
+    27     │ - function·parentMessage(event,·attribution,·extra·=·{})·{·if·(typeof·window·!==·'undefined'·&&·window.parent)·window.parent.postMessage({·type:·'pal-atlas-embed-v1',·event,·...attribution,·...extra·},·'*');·}
+        45 │ + function·esc(value)·{
+        46 │ + ··return·String(value).replace(
+        47 │ + ····/[&<>"']/g,
+        48 │ + ····(char)·=>
+        49 │ + ······({·"&":·"&amp;",·"<":·"&lt;",·">":·"&gt;",·'"':·"&quot;",·"'":·"&#39;"·})[
+        50 │ + ········char
+        51 │ + ······],
+        52 │ + ··);
+        53 │ + }
+        54 │ + function·parentMessage(event,·attribution,·extra·=·{})·{
+        55 │ + ··if·(typeof·window·!==·"undefined"·&&·window.parent)
+        56 │ + ····window.parent.postMessage(
+        57 │ + ······{·type:·"pal-atlas-embed-v1",·event,·...attribution,·...extra·},
+        58 │ + ······"*",
+        59 │ + ····);
+        60 │ + }
+    28  61 │   async function boot() {
+    29     │ - ··const·root·=·document.querySelector('#widget');·if·(!root)·return;
+    30     │ - ··const·params·=·new·URLSearchParams(window.location.search);·const·lang·=·params.get('lang')·===·'en'·?·'en'·:·'ja';
+    31     │ - ··const·attribution·=·{·partner:·normalizeAttribution(params.get('partner')),·campaign:·normalizeAttribution(params.get('campaign'))·};
+    32     │ - ··const·copy·=·lang·===·'ja'·?·{·title:'PAL·ATLAS·配合検索',pair:'親2体から検索',target:'目的のパル...
+    33     │ - ··const·[palsPayload,·breeding]·=·await·Promise.all([fetch('../../api/pals.json').then(r=>{if(!r.ok)throw·new·Error(`pals·${r.status}`);return·r.json();}),fetch('../../api/breeding.json').then(r=>{if(!r.ok)throw·new·Error(`breeding·${r.status}`);return·r.json();})]);
+    34     │ - ··const·pals=palsPayload.pals??[];·const·byId=new·Map(pals.map(p=>[p.id,p]));·const·name=p=>lang==='ja'?p.nameJa:p.nameEn;·const·options=[`<option·value="">${esc(copy.choose)}</option>`,...pals.map(p=>`<option·value="${esc(p.id)}">${esc(name(p))}</option>`)].join('');
+    35     │ - ...><footer>${esc(copy.unofficial)}</footer></main>`;
+    36     │ - ··const·setIfKnown=(selector,value)=>{if(value&&byId.has(value))root.querySelector(selector).value=value;};·setIfKnown('#parent-a',params.get('parentA'));setIfKnown('#parent-b',params.get('parentB'));setIfKnown('#target',params.get('target'));
+    37     │ - ··const·detailLink=pal=>`<a·target="_blank"·rel="noopener·noreferrer"·href="../../"·data-open-pal="${esc(pal.id)}">${esc(copy.detail)}</a>`;
+    38     │ - ...=root.querySelector('#parent-a').value,b=root.querySelector('#parent-b').value,result=resolvePair(br...
+    39     │ - ...querySelector('#target').value,targetPal=byId.get(target),rows=findTargetRecipes(breeding,target).sl...
+    40     │ - ··root.querySelector('#pair-search').addEventListener('click',renderPair);root.querySelector('#targe...
+        62 │ + ··const·root·=·document.querySelector("#widget");
+        63 │ + ··if·(!root)·return;
+        64 │ + ··const·params·=·new·URLSearchParams(window.location.search);
+        65 │ + ··const·lang·=·params.get("lang")·===·"en"·?·"en"·:·"ja";
+        66 │ + ··const·attribution·=·{
+        67 │ + ····partner:·normalizeAttribution(params.get("partner")),
+        68 │ + ····campaign:·normalizeAttribution(params.get("campaign")),
+        69 │ + ··};
+        70 │ + ··const·copy·=
+        71 │ + ····lang·===·"ja"
+        72 │ + ······?·{
+        73 │ + ··········title:·"PAL·ATLAS·配合検索",
+        74 │ + ··········pair:·"親2体から検索",
+        75 │ + ··········target:·"目的のパルから検索",
+        76 │ + ··········search:·"検索",
+        77 │ + ··········normal:·"通常配合",
+        78 │ + ··········special:·"特殊配合",
+        79 │ + ··········review:·"出典競合または未解決のため確定表示しません。",
+        80 │ + ··········unknown:·"確認できる配合結果がありません。",
+        81 │ + ··········detail:·"PAL·ATLASを開く",
+        82 │ + ··········unofficial:
+        83 │ + ············"非公式ファンプロジェクトです。公式情報・出典はPAL·ATLAS本体から確認できます。",
+        84 │ + ··········choose:·"選択してください",
+        85 │ + ··········recipes:·"配合候補",
+        86 │ + ········}
+        87 │ + ······:·{
+        88 │ + ··········title:·"PAL·ATLAS·Breeding·Search",
+        89 │ + ··········pair:·"Search·by·two·parents",
+        90 │ + ··········target:·"Search·by·target·Pal",
+        91 │ + ··········search:·"Search",
+        92 │ + ··········normal:·"Normal·breeding",
+        93 │ + ··········special:·"Special·breeding",
+        94 │ + ··········review:
+        95 │ + ············"Source·conflict·or·unresolved·evidence;·no·definitive·result·is·shown.",
+        96 │ + ··········unknown:·"No·confirmed·breeding·result·was·found.",
+        97 │ + ··········detail:·"Open·PAL·ATLAS",
+        98 │ + ··········unofficial:
+        99 │ + ············"Unofficial·fan·project.·Check·sources·and·evidence·in·PAL·ATLAS.",
+       100 │ + ··········choose:·"Choose·a·Pal",
+       101 │ + ··········recipes:·"Breeding·options",
+       102 │ + ········};
+       103 │ + ··const·[palsPayload,·breeding]·=·await·Promise.all([
+       104 │ + ····fetch("../../api/pals.json").then((r)·=>·{
+       105 │ + ······if·(!r.ok)·throw·new·Error(`pals·${r.status}`);
+       106 │ + ······return·r.json();
+       107 │ + ····}),
+       108 │ + ····fetch("../../api/breeding.json").then((r)·=>·{
+       109 │ + ······if·(!r.ok)·throw·new·Error(`breeding·${r.status}`);
+       110 │ + ······return·r.json();
+       111 │ + ····}),
+       112 │ + ··]);
+       113 │ + ··const·pals·=·palsPayload.pals·??·[];
+       114 │ + ··const·byId·=·new·Map(pals.map((p)·=>·[p.id,·p]));
+       115 │ + ··const·name·=·(p)·=>·(lang·===·"ja"·?·p.nameJa·:·p.nameEn);
+       116 │ + ··const·options·=·[
+       117 │ + ····`<option·value="">${esc(copy.choose)}</option>`,
+       118 │ + ····...pals.map((p)·=>·`<option·value="${esc(p.id)}">${esc(name(p))}</option>`),
+       119 │ + ··].join("");
+       120 │ + ··root.innerHTML·=·`<main><header><span>PAL·ATLAS</span><h1>${esc(copy.title)}</h1></header><section...
+       121 │ + ··const·setIfKnown·=·(selector,·value)·=>·{
+       122 │ + ····if·(value·&&·byId.has(value))·root.querySelector(selector).value·=·value;
+       123 │ + ··};
+  71 more lines truncated
+  
+
+scripts/build-provenance.mjs format ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Formatter would have printed the following content:
+  
+     1    │ - import·{·createHash·}·from·'node:crypto';
+     2    │ - import·{·readFile,·writeFile·}·from·'node:fs/promises';
+        1 │ + import·{·createHash·}·from·"node:crypto";
+        2 │ + import·{·readFile,·writeFile·}·from·"node:fs/promises";
+     3  3 │   
+     4    │ - const·ROOT·=·new·URL('..',·import.meta.url).pathname;
+        4 │ + const·ROOT·=·new·URL("..",·import.meta.url).pathname;
+     5  5 │   const DATA_DIR = `${ROOT}/data`;
+     6  6 │   
+     7  7 │   const tierById = {
+     8    │ - ··'official-news':·{·sourceType:·'publisher_official',·sourceTier:·1·},
+     9    │ - ··'official-game':·{·sourceType:·'publisher_official',·sourceTier:·1·},
+    10    │ - ··'official-docs':·{·sourceType:·'publisher_official',·sourceTier:·1·},
+    11    │ - ··'palworld-gg':·{·sourceType:·'third_party_primary_dataset',·sourceTier:·2·},
+    12    │ - ··'palworld-wiki':·{·sourceType:·'community_reference',·sourceTier:·2·},
+    13    │ - ··'palworld-wiki-images':·{·sourceType:·'community_reference',·sourceTier:·2·},
+    14    │ - ··game8:·{·sourceType:·'third_party_cross_check',·sourceTier:·3·},
+    15    │ - ··paldeck:·{·sourceType:·'third_party_cross_check',·sourceTier:·3·},
+    16    │ - ··'webp-proxy':·{·sourceType:·'delivery_utility',·sourceTier:·3·},
+        8 │ + ··"official-news":·{·sourceType:·"publisher_official",·sourceTier:·1·},
+        9 │ + ··"official-game":·{·sourceType:·"publisher_official",·sourceTier:·1·},
+       10 │ + ··"official-docs":·{·sourceType:·"publisher_official",·sourceTier:·1·},
+       11 │ + ··"palworld-gg":·{·sourceType:·"third_party_primary_dataset",·sourceTier:·2·},
+       12 │ + ··"palworld-wiki":·{·sourceType:·"community_reference",·sourceTier:·2·},
+       13 │ + ··"palworld-wiki-images":·{·sourceType:·"community_reference",·sourceTier:·2·},
+       14 │ + ··game8:·{·sourceType:·"third_party_cross_check",·sourceTier:·3·},
+       15 │ + ··paldeck:·{·sourceType:·"third_party_cross_check",·sourceTier:·3·},
+       16 │ + ··"webp-proxy":·{·sourceType:·"delivery_utility",·sourceTier:·3·},
+    17 17 │   };
+    18 18 │   
+    19    │ - const·sourceData·=·JSON.parse(await·readFile(`${DATA_DIR}/sources.json`,·'utf8'));
+    20    │ - const·palsData·=·JSON.parse(await·readFile(`${DATA_DIR}/pals.json`,·'utf8'));
+    21    │ - const·breedingData·=·JSON.parse(await·readFile(`${DATA_DIR}/breeding.json`,·'utf8'));
+       19 │ + const·sourceData·=·JSON.parse(
+       20 │ + ··await·readFile(`${DATA_DIR}/sources.json`,·"utf8"),
+       21 │ + );
+       22 │ + const·palsData·=·JSON.parse(await·readFile(`${DATA_DIR}/pals.json`,·"utf8"));
+       23 │ + const·breedingData·=·JSON.parse(
+       24 │ + ··await·readFile(`${DATA_DIR}/breeding.json`,·"utf8"),
+       25 │ + );
+    22 26 │   
+    23 27 │   const sources = sourceData.sources.map((source) => ({
+    24 28 │     ...source,
+    25    │ - ··...(tierById[source.id]·??·{·sourceType:·'unclassified',·sourceTier:·null·}),
+       29 │ + ··...(tierById[source.id]·??·{·sourceType:·"unclassified",·sourceTier:·null·}),
+    26 30 │     observedAt: sourceData.generatedAt,
+    27 31 │   }));
+    28 32 │   
+    29 33 │   const registryPayload = {
+    30    │ - ··schemaVersion:·'pal-atlas.sources.v1',
+       34 │ + ··schemaVersion:·"pal-atlas.sources.v1",
+    31 35 │     generatedAt: sourceData.generatedAt,
+    32 36 │     tierPolicy: {
+    33    │ - ····1:·'Pocketpair·publisher/developer·first-party·source',
+    34    │ - ····2:·'structured·independent·dataset·or·community·reference·used·as·a·primary·machine-readable·source',
+    35    │ - ····3:·'cross-check·or·delivery·utility;·never·silently·overrides·tier·1·or·tier·2·claims',
+       37 │ + ····1:·"Pocketpair·publisher/developer·first-party·source",
+       38 │ + ····2:·"structured·independent·dataset·or·community·reference·used·as·a·primary·machine-readable·source",
+       39 │ + ····3:·"cross-check·or·delivery·utility;·never·silently·overrides·tier·1·or·tier·2·claims",
+    36 40 │     },
+    37 41 │     sources,
+    38 42 │   };
+    39    │ - registryPayload.registryHash·=·createHash('sha256')
+       43 │ + registryPayload.registryHash·=·createHash("sha256")
+    40 44 │     .update(JSON.stringify(registryPayload))
+    41    │ - ··.digest('hex');
+    42    │ - await·writeFile(`${DATA_DIR}/sources.json`,·`${JSON.stringify(registryPayload,·null,·2)}\n`);
+       45 │ + ··.digest("hex");
+       46 │ + await·writeFile(
+       47 │ + ··`${DATA_DIR}/sources.json`,
+       48 │ + ··`${JSON.stringify(registryPayload,·null,·2)}\n`,
+       49 │ + );
+    43 50 │   
+    44 51 │   const unresolvedSpecial = (breedingData.special ?? [])
+    45    │ - ··.filter((row)·=>·row.status·!==·'resolved')
+       52 │ + ··.filter((row)·=>·row.status·!==·"resolved")
+    46 53 │     .map((row) => ({
+    47 54 │       id: row.id,
+    48    │ - ····conflictType:·'identity_resolution_failure',
+    49    │ - ····conflictStatus:·'unresolved',
+       55 │ + ····conflictType:·"identity_resolution_failure",
+       56 │ + ····conflictStatus:·"unresolved",
+    50 57 │       parentA: row.parentA,
+    51 58 │       parentB: row.parentB,
+    52 59 │       child: row.child,
+    53 60 │       sourceOwner: row.sourceOwner,
+    54    │ - ····nullReason:·'source_combo_contains_identity_not_resolved_to_current_catalog',
+       61 │ + ····nullReason:
+       62 │ + ······"source_combo_contains_identity_not_resolved_to_current_catalog",
+    55 63 │     }));
+    56 64 │   
+    57 65 │   const conflictPayload = {
+    58    │ - ··schemaVersion:·'pal-atlas.conflicts.v1',
+       66 │ + ··schemaVersion:·"pal-atlas.conflicts.v1",
+    59 67 │     generatedAt: sourceData.generatedAt,
+    60 68 │     dataAsOf: palsData.meta?.generatedAt ?? sourceData.generatedAt,
+    61    │ - ··evaluationStatus:·'partial',
+    62    │ - ··nullReason:·'registered_cross_check_sources_are_not_all_machine_ingested_as_field_level_claims',
+    63    │ - ··policy:·'Never·infer·agreement·from·the·absence·of·machine-comparable·secondary·claims;·preserve·unresolved·identities·and·explicit·disagreements·as·conflicts.',
+       69 │ + ··evaluationStatus:·"partial",
+       70 │ + ··nullReason:
+       71 │ + ····"registered_cross_check_sources_are_not_all_machine_ingested_as_field_level_claims",
+       72 │ + ··policy:
+       73 │ + ····"Never·infer·agreement·from·the·absence·of·machine-comparable·secondary·claims;·preserve·unresolved·identities·and·explicit·disagreements·as·conflicts.",
+    64 74 │     conflicts: unresolvedSpecial,
+    65 75 │   };
+    66    │ - conflictPayload.artifactHash·=·createHash('sha256')
+       76 │ + conflictPayload.artifactHash·=·createHash("sha256")
+    67 77 │     .update(JSON.stringify(conflictPayload))
+    68    │ - ··.digest('hex');
+    69    │ - await·writeFile(`${DATA_DIR}/conflicts.json`,·`${JSON.stringify(conflictPayload,·null,·2)}\n`);
+       78 │ + ··.digest("hex");
+       79 │ + await·writeFile(
+       80 │ + ··`${DATA_DIR}/conflicts.json`,
+       81 │ + ··`${JSON.stringify(conflictPayload,·null,·2)}\n`,
+       82 │ + );
+    70 83 │   
+    71 84 │   console.log(
+  
+
+scripts/build-static-api.mjs format ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Formatter would have printed the following content:
+  
+     1     │ - import·{·mkdir,·readFile,·rm,·writeFile·}·from·'node:fs/promises';
+         1 │ + import·{·mkdir,·readFile,·rm,·writeFile·}·from·"node:fs/promises";
+     2   2 │   
+     3     │ - const·ROOT·=·new·URL('..',·import.meta.url).pathname;
+         3 │ + const·ROOT·=·new·URL("..",·import.meta.url).pathname;
+     4   4 │   const PUBLIC_API = `${ROOT}/public/api`;
+     5     │ - const·palsData·=·JSON.parse(await·readFile(`${ROOT}/data/pals.json`,·'utf8'));
+     6     │ - const·breedingData·=·JSON.parse(await·readFile(`${ROOT}/data/breeding.json`,·'utf8'));
+     7     │ - const·childrenData·=·JSON.parse(await·readFile(`${ROOT}/data/children.json`,·'utf8'));
+     8     │ - const·sourceData·=·JSON.parse(await·readFile(`${ROOT}/data/sources.json`,·'utf8'));
+     9     │ - const·conflictData·=·JSON.parse(await·readFile(`${ROOT}/data/conflicts.json`,·'utf8'));
+         5 │ + const·palsData·=·JSON.parse(await·readFile(`${ROOT}/data/pals.json`,·"utf8"));
+         6 │ + const·breedingData·=·JSON.parse(
+         7 │ + ··await·readFile(`${ROOT}/data/breeding.json`,·"utf8"),
+         8 │ + );
+         9 │ + const·childrenData·=·JSON.parse(
+        10 │ + ··await·readFile(`${ROOT}/data/children.json`,·"utf8"),
+        11 │ + );
+        12 │ + const·sourceData·=·JSON.parse(
+        13 │ + ··await·readFile(`${ROOT}/data/sources.json`,·"utf8"),
+        14 │ + );
+        15 │ + const·conflictData·=·JSON.parse(
+        16 │ + ··await·readFile(`${ROOT}/data/conflicts.json`,·"utf8"),
+        17 │ + );
+    10  18 │   
+    11  19 │   const writeJson = async (path, value) => {
+    12     │ - ··await·mkdir(path.slice(0,·path.lastIndexOf('/')),·{·recursive:·true·});
+    13     │ - ··await·writeFile(path,·JSON.stringify(value)·+·'\n');
+        20 │ + ··await·mkdir(path.slice(0,·path.lastIndexOf("/")),·{·recursive:·true·});
+        21 │ + ··await·writeFile(path,·JSON.stringify(value)·+·"\n");
+    14  22 │   };
+    15  23 │   
+    16     │ - const·pals·=·palsData.pals.map(({·id,·order,·nameEn,·nameJa,·imageUrl,·imageOriginalUrl,·imageReferenceUrl,·imageWebpUrl,·imageFile,·imageMime,·imageDelivery,·elements,·rarity,·rarityTier,·breedingRank,·combiPriority,·ignoreCombi·})·=>·({
+    17     │ - ··id,·order,·nameEn,·nameJa,·imageUrl,·imageOriginalUrl,·imageReferenceUrl,·imageWebpUrl,·imageFile,·imageMime,·imageDelivery,·elements,·rarity,·rarityTier,·breedingRank,·combiPriority,·ignoreCombi,
+    18     │ - }));
+        24 │ + const·pals·=·palsData.pals.map(
+        25 │ + ··({
+        26 │ + ····id,
+        27 │ + ····order,
+        28 │ + ····nameEn,
+        29 │ + ····nameJa,
+        30 │ + ····imageUrl,
+        31 │ + ····imageOriginalUrl,
+        32 │ + ····imageReferenceUrl,
+        33 │ + ····imageWebpUrl,
+        34 │ + ····imageFile,
+        35 │ + ····imageMime,
+        36 │ + ····imageDelivery,
+        37 │ + ····elements,
+        38 │ + ····rarity,
+        39 │ + ····rarityTier,
+        40 │ + ····breedingRank,
+        41 │ + ····combiPriority,
+        42 │ + ····ignoreCombi,
+        43 │ + ··})·=>·({
+        44 │ + ····id,
+        45 │ + ····order,
+        46 │ + ····nameEn,
+        47 │ + ····nameJa,
+        48 │ + ····imageUrl,
+        49 │ + ····imageOriginalUrl,
+        50 │ + ····imageReferenceUrl,
+        51 │ + ····imageWebpUrl,
+        52 │ + ····imageFile,
+        53 │ + ····imageMime,
+        54 │ + ····imageDelivery,
+        55 │ + ····elements,
+        56 │ + ····rarity,
+        57 │ + ····rarityTier,
+        58 │ + ····breedingRank,
+        59 │ + ····combiPriority,
+        60 │ + ····ignoreCombi,
+        61 │ + ··}),
+        62 │ + );
+    19  63 │   const palById = new Map(pals.map((pal) => [pal.id, pal]));
+    20  64 │   const specialByChild = new Map();
+    ······ │ 
+    34  78 │     formula: palsData.meta.formula,
+    35  79 │     endpoints: {
+    36     │ - ····catalog:·'./pals.json',
+    37     │ - ····breeding:·'./breeding.json',
+    38     │ - ····sources:·'./sources.json',
+    39     │ - ····conflicts:·'./conflicts.json',
+    40     │ - ····pal:·'./pals/{id}.json',
+        80 │ + ····catalog:·"./pals.json",
+        81 │ + ····breeding:·"./breeding.json",
+        82 │ + ····sources:·"./sources.json",
+        83 │ + ····conflicts:·"./conflicts.json",
+        84 │ + ····pal:·"./pals/{id}.json",
+    41  85 │     },
+    42  86 │   });
+    ······ │ 
+    61 105 │   }
+    62 106 │   
+    63     │ - console.log(`Built·static·API:·${pals.length}·pal·detail·files,·${breedingData.normalCount}·normal·pairs,·${breedingData.special.length}·special·pairs.`);
+       107 │ + console.log(
+       108 │ + ··`Built·static·API:·${pals.length}·pal·detail·files,·${breedingData.normalCount}·normal·pairs,·${breedingData.special.length}·special·pairs.`,
+       109 │ + );
+    64 110 │   
+  
+
+scripts/fetch-palworld-data.mjs:1:1 assist/source/organizeImports  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Sort these imports.
+  
+  > 1 │ import { mkdir, rm, writeFile } from 'node:fs/promises';
+      │ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 2 │ import { createHash } from 'node:crypto';
+      │ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    3 │ import { tmpdir } from 'node:os';
+    4 │ import { pathToFileURL } from 'node:url';
+  
+  i Safe fix: Organize imports and exports (Biome)
+  
+      1     │ - import·{·mkdir,·rm,·writeFile·}·from·'node:fs/promises';
+      2     │ - import·{·createHash·}·from·'node:crypto';
+          1 │ + import·{·createHash·}·from·'node:crypto';
+          2 │ + import·{·mkdir,·rm,·writeFile·}·from·'node:fs/promises';
+      3   3 │   import { tmpdir } from 'node:os';
+      4   4 │   import { pathToFileURL } from 'node:url';
+  
+
+scripts/fetch-palworld-data.mjs format ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Formatter would have printed the following content:
+  
+      1     │ - import·{·mkdir,·rm,·writeFile·}·from·'node:fs/promises';
+      2     │ - import·{·createHash·}·from·'node:crypto';
+      3     │ - import·{·tmpdir·}·from·'node:os';
+      4     │ - import·{·pathToFileURL·}·from·'node:url';
+          1 │ + import·{·mkdir,·rm,·writeFile·}·from·"node:fs/promises";
+          2 │ + import·{·createHash·}·from·"node:crypto";
+          3 │ + import·{·tmpdir·}·from·"node:os";
+          4 │ + import·{·pathToFileURL·}·from·"node:url";
+      5   5 │   
+      6     │ - const·ROOT·=·new·URL('..',·import.meta.url).pathname;
+          6 │ + const·ROOT·=·new·URL("..",·import.meta.url).pathname;
+      7   7 │   const DATA_DIR = `${ROOT}/data`;
+      8   8 │   const NEO4J_DIR = `${ROOT}/neo4j`;
+      9     │ - const·EN_URL·=·'https://palworld.gg/breeding-calculator';
+     10     │ - const·JA_URL·=·'https://palworld.gg/ja/breeding-calculator';
+     11     │ - const·WIKI_API·=·'https://palworld.wiki.gg/api.php';
+          9 │ + const·EN_URL·=·"https://palworld.gg/breeding-calculator";
+         10 │ + const·JA_URL·=·"https://palworld.gg/ja/breeding-calculator";
+         11 │ + const·WIKI_API·=·"https://palworld.wiki.gg/api.php";
+     12  12 │   const fetchedAt = new Date().toISOString();
+     13  13 │   
+     14  14 │   const ELEMENTS = new Map([
+     15     │ - ··['Normal',·'neutral'],·['Neutral',·'neutral'],·['無属性',·'neutral'],
+     16     │ - ··['Fire',·'fire'],·['火',·'fire'],·['Water',·'water'],·['水',·'water'],
+     17     │ - ··['Leaf',·'grass'],·['Grass',·'grass'],·['草',·'grass'],
+     18     │ - ··['Electricity',·'electric'],·['Electric',·'electric'],·['雷',·'electric'],
+     19     │ - ··['Ground',·'ground'],·['地面',·'ground'],·['Earth',·'ground'],·['大地',·'ground'],
+     20     │ - ··['Ice',·'ice'],·['氷',·'ice'],·['Dark',·'dark'],·['ダーク',·'dark'],
+     21     │ - ··['Dragon',·'dragon'],·['ドラゴン',·'dragon'],
+         15 │ + ··["Normal",·"neutral"],
+         16 │ + ··["Neutral",·"neutral"],
+         17 │ + ··["無属性",·"neutral"],
+         18 │ + ··["Fire",·"fire"],
+         19 │ + ··["火",·"fire"],
+         20 │ + ··["Water",·"water"],
+         21 │ + ··["水",·"water"],
+         22 │ + ··["Leaf",·"grass"],
+         23 │ + ··["Grass",·"grass"],
+         24 │ + ··["草",·"grass"],
+         25 │ + ··["Electricity",·"electric"],
+         26 │ + ··["Electric",·"electric"],
+         27 │ + ··["雷",·"electric"],
+         28 │ + ··["Ground",·"ground"],
+         29 │ + ··["地面",·"ground"],
+         30 │ + ··["Earth",·"ground"],
+         31 │ + ··["大地",·"ground"],
+         32 │ + ··["Ice",·"ice"],
+         33 │ + ··["氷",·"ice"],
+         34 │ + ··["Dark",·"dark"],
+         35 │ + ··["ダーク",·"dark"],
+         36 │ + ··["Dragon",·"dragon"],
+         37 │ + ··["ドラゴン",·"dragon"],
+     22  38 │   ]);
+     23  39 │   
+     24  40 │   const sources = [
+     25     │ - ··{·id:·'palworld-gg',·title:·'Palworld.gg·Paldeck·/·Breeding·Calculator',·url:·EN_URL,·role:·'297-entry·catalog·and·Breeding·Rank'·},
+     26     │ - ··{·id:·'palworld-wiki',·title:·'Palworld·Wiki·—·Breeding',·url:·'https://palworld.wiki.gg/wiki/Breeding',·role:·'normal·formula·and·special-combination·rule·cross-check'·},
+     27     │ - ··{·id:·'palworld-wiki-images',·title:·'Palworld·Wiki·—·Pal·icon·files',·url:·'https://palworld.wiki.gg/wiki/Template:Icon',·role:·'297·verified·external·icon·URLs'·},
+     28     │ - ··{·id:·'webp-proxy',·title:·'wsrv.nl·image·optimizer',·url:·'https://images.weserv.nl/',·role:·'external·WebP·delivery·URL·generated·from·each·source·image'·},
+     29     │ - ··{·id:·'game8',·title:·'Game8·—·Breeding·Combos·Calculator',·url:·'https://game8.co/games/Palworld/archives/440530',·role:·'breeding·workflow·and·special-combination·cross-check'·},
+     30     │ - ··{·id:·'paldeck',·title:·'Paldeck',·url:·'https://www.paldeck.cc/breeding',·role:·'independent·database·cross-check'·},
+     31     │ - ··{·id:·'official-news',·title:·'Pocketpair·official·news',·url:·'https://news.palworldgame.com/',·role:·'official·release·and·news·context'·},
+     32     │ - ··{·id:·'official-game',·title:·'Pocketpair·official·Palworld·site',·url:·'https://www.pocketpair.jp/en/games-en/palworld-en/',·role:·'official·game·and·version·context'·},
+     33     │ - ··{·id:·'official-docs',·title:·'Pocketpair·official·server·docs',·url:·'https://docs.palworldgame.com/',·role:·'official·documentation·entry·point'·},
+         41 │ + ··{
+         42 │ + ····id:·"palworld-gg",
+         43 │ + ····title:·"Palworld.gg·Paldeck·/·Breeding·Calculator",
+         44 │ + ····url:·EN_URL,
+         45 │ + ····role:·"297-entry·catalog·and·Breeding·Rank",
+         46 │ + ··},
+         47 │ + ··{
+         48 │ + ····id:·"palworld-wiki",
+         49 │ + ····title:·"Palworld·Wiki·—·Breeding",
+         50 │ + ····url:·"https://palworld.wiki.gg/wiki/Breeding",
+         51 │ + ····role:·"normal·formula·and·special-combination·rule·cross-check",
+         52 │ + ··},
+         53 │ + ··{
+         54 │ + ····id:·"palworld-wiki-images",
+         55 │ + ····title:·"Palworld·Wiki·—·Pal·icon·files",
+         56 │ + ····url:·"https://palworld.wiki.gg/wiki/Template:Icon",
+         57 │ + ····role:·"297·verified·external·icon·URLs",
+         58 │ + ··},
+         59 │ + ··{
+         60 │ + ····id:·"webp-proxy",
+         61 │ + ····title:·"wsrv.nl·image·optimizer",
+         62 │ + ····url:·"https://images.weserv.nl/",
+         63 │ + ····role:·"external·WebP·delivery·URL·generated·from·each·source·image",
+         64 │ + ··},
+         65 │ + ··{
+         66 │ + ····id:·"game8",
+         67 │ + ····title:·"Game8·—·Breeding·Combos·Calculator",
+         68 │ + ····url:·"https://game8.co/games/Palworld/archives/440530",
+         69 │ + ····role:·"breeding·workflow·and·special-combination·cross-check",
+         70 │ + ··},
+         71 │ + ··{
+         72 │ + ····id:·"paldeck",
+         73 │ + ····title:·"Paldeck",
+         74 │ + ····url:·"https://www.paldeck.cc/breeding",
+         75 │ + ····role:·"independent·database·cross-check",
+         76 │ + ··},
+         77 │ + ··{
+         78 │ + ····id:·"official-news",
+         79 │ + ····title:·"Pocketpair·official·news",
+         80 │ + ····url:·"https://news.palworldgame.com/",
+         81 │ + ····role:·"official·release·and·news·context",
+         82 │ + ··},
+         83 │ + ··{
+         84 │ + ····id:·"official-game",
+         85 │ + ····title:·"Pocketpair·official·Palworld·site",
+         86 │ + ····url:·"https://www.pocketpair.jp/en/games-en/palworld-en/",
+         87 │ + ····role:·"official·game·and·version·context",
+         88 │ + ··},
+         89 │ + ··{
+         90 │ + ····id:·"official-docs",
+         91 │ + ····title:·"Pocketpair·official·server·docs",
+         92 │ + ····url:·"https://docs.palworldgame.com/",
+         93 │ + ····role:·"official·documentation·entry·point",
+         94 │ + ··},
+     34  95 │   ];
+     35  96 │   
+     36  97 │   function decode(value) {
+     37     │ - ··return·value.replaceAll('&amp;',·'&').replaceAll('&#39;',·"'");
+         98 │ + ··return·value.replaceAll("&amp;",·"&").replaceAll("&#39;",·"'");
+     38  99 │   }
+     39 100 │   
+     40 101 │   function slug(value) {
+     41     │ - ··return·value.toLowerCase().replace(/[^a-z0-9]+/g,·'-').replace(/^-|-$/g,·'');
+        102 │ + ··return·value
+        103 │ + ····.toLowerCase()
+        104 │ + ····.replace(/[^a-z0-9]+/g,·"-")
+        105 │ + ····.replace(/^-|-$/g,·"");
+     42 106 │   }
+     43 107 │   
+     44 108 │   function parsePage(html) {
+     45     │ - ··const·pattern·=·/<div·class="pal"><div·class="container·([^"]+)">.*?<div·class="elements">(.*?)<\/div><div·class="image">.*?<img[^>]+alt="([^"]+)"[^>]+src="([^"]+)".*?<div·class="name">\s*[^<]+.*?comb-rank">\(([^)]+)\)/gs;
+        109 │ + ··const·pattern·=
+        110 │ + ····/<div·class="pal"><div·class="container·([^"]+)">.*?<div·class="elements">(.*?)<\/div><div·class="image">.*?<img[^>]+alt="([^"]+)"[^>]+src="([^"]+)".*?<div·class="name">\s*[^<]+.*?comb-rank">\(([^)]+)\)/gs;
+     46 111 │     return [...html.matchAll(pattern)].map((match, index) => {
+     47 112 │       const block = match[0];
+    ······· │ 
+     53 118 │         order: index + 1,
+     54 119 │         name: match[3].trim(),
+     55     │ - ······imageFile:·imagePath.split('/').pop(),
+        120 │ + ······imageFile:·imagePath.split("/").pop(),
+     56 121 │         imageUrl: `https://palworld.gg${imagePath}`,
+     57 122 │         elements,
+     58     │ - ······rarity:·Number(block.match(/<div·class="(?:common|rare|epic)·rarity"><div·class="lv">(\d+)<\/div>/)?.[1]·??·0),
+        123 │ + ······rarity:·Number(
+        124 │ + ········block.match(
+        125 │ + ··········/<div·class="(?:common|rare|epic)·rarity"><div·class="lv">(\d+)<\/div>/,
+        126 │ + ········)?.[1]·??·0,
+  447 more lines truncated
+  
+
+scripts/test-embed.mjs format ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Formatter would have printed the following content:
+  
+     1    │ - import·assert·from·'node:assert/strict';
+     2    │ - import·{·readFile·}·from·'node:fs/promises';
+     3    │ - import·{·findTargetRecipes,·normalizeAttribution,·resolvePair,·samePair·}·from·'../public/embed/breed/widget.js';
+        1 │ + import·assert·from·"node:assert/strict";
+        2 │ + import·{·readFile·}·from·"node:fs/promises";
+        3 │ + import·{
+        4 │ + ··findTargetRecipes,
+        5 │ + ··normalizeAttribution,
+        6 │ + ··resolvePair,
+        7 │ + ··samePair,
+        8 │ + }·from·"../public/embed/breed/widget.js";
+     4  9 │   
+     5 10 │   const breeding = {
+     6 11 │     special: [
+     7    │ - ····{·parentA:·'a',·parentB:·'b',·child:·'special-child',·status:·'resolved'·},
+     8    │ - ····{·parentA:·'x',·parentB:·'y',·child:·'uncertain-child',·status:·'unresolved'·},
+       12 │ + ····{·parentA:·"a",·parentB:·"b",·child:·"special-child",·status:·"resolved"·},
+       13 │ + ····{
+       14 │ + ······parentA:·"x",
+       15 │ + ······parentB:·"y",
+       16 │ + ······child:·"uncertain-child",
+       17 │ + ······status:·"unresolved",
+       18 │ + ····},
+     9 19 │     ],
+    10 20 │     normal: [
+    11    │ - ····{·parentA:·'a',·parentB:·'b',·child:·'normal-child'·},
+    12    │ - ····{·parentA:·'c',·parentB:·'d',·child:·'normal-child'·},
+    13    │ - ····{·parentA:·'e',·parentB:·'f',·child:·'target'·},
+       21 │ + ····{·parentA:·"a",·parentB:·"b",·child:·"normal-child"·},
+       22 │ + ····{·parentA:·"c",·parentB:·"d",·child:·"normal-child"·},
+       23 │ + ····{·parentA:·"e",·parentB:·"f",·child:·"target"·},
+    14 24 │     ],
+    15 25 │   };
+    16 26 │   
+    17    │ - assert.equal(samePair({·parentA:·'a',·parentB:·'b'·},·'b',·'a'),·true);
+    18    │ - assert.deepEqual(resolvePair(breeding,·'b',·'a'),·{·status:·'MATCH',·kind:·'special',·child:·'special-child'·});
+    19    │ - assert.deepEqual(resolvePair(breeding,·'x',·'y'),·{·status:·'REVIEW_REQUIRED',·reason:·'unresolved_special_recipe'·});
+    20    │ - assert.deepEqual(resolvePair(breeding,·'d',·'c'),·{·status:·'MATCH',·kind:·'normal',·child:·'normal-child'·});
+    21    │ - assert.deepEqual(resolvePair(breeding,·'missing',·'pair'),·{·status:·'UNKNOWN'·});
+    22    │ - assert.equal(findTargetRecipes(breeding,·'uncertain-child').length,·0);
+    23    │ - assert.equal(findTargetRecipes(breeding,·'target')[0].kind,·'normal');
+    24    │ - assert.equal(normalizeAttribution('partner-01.example'),·'partner-01.example');
+    25    │ - assert.equal(normalizeAttribution('bad·value'),·null);
+    26    │ - assert.equal(normalizeAttribution('x'.repeat(65)),·null);
+       27 │ + assert.equal(samePair({·parentA:·"a",·parentB:·"b"·},·"b",·"a"),·true);
+       28 │ + assert.deepEqual(resolvePair(breeding,·"b",·"a"),·{
+       29 │ + ··status:·"MATCH",
+       30 │ + ··kind:·"special",
+       31 │ + ··child:·"special-child",
+       32 │ + });
+       33 │ + assert.deepEqual(resolvePair(breeding,·"x",·"y"),·{
+       34 │ + ··status:·"REVIEW_REQUIRED",
+       35 │ + ··reason:·"unresolved_special_recipe",
+       36 │ + });
+       37 │ + assert.deepEqual(resolvePair(breeding,·"d",·"c"),·{
+       38 │ + ··status:·"MATCH",
+       39 │ + ··kind:·"normal",
+       40 │ + ··child:·"normal-child",
+       41 │ + });
+       42 │ + assert.deepEqual(resolvePair(breeding,·"missing",·"pair"),·{
+       43 │ + ··status:·"UNKNOWN",
+       44 │ + });
+       45 │ + assert.equal(findTargetRecipes(breeding,·"uncertain-child").length,·0);
+       46 │ + assert.equal(findTargetRecipes(breeding,·"target")[0].kind,·"normal");
+       47 │ + assert.equal(normalizeAttribution("partner-01.example"),·"partner-01.example");
+       48 │ + assert.equal(normalizeAttribution("bad·value"),·null);
+       49 │ + assert.equal(normalizeAttribution("x".repeat(65)),·null);
+    27 50 │   
+    28    │ - const·html·=·await·readFile(new·URL('../public/embed/breed/index.html',·import.meta.url),·'utf8');
+    29    │ - const·js·=·await·readFile(new·URL('../public/embed/breed/widget.js',·import.meta.url),·'utf8');
+    30    │ - const·docs·=·await·readFile(new·URL('../docs/embed.md',·import.meta.url),·'utf8');
+    31    │ - const·readme·=·await·readFile(new·URL('../README.md',·import.meta.url),·'utf8');
+    32    │ - const·metrics·=·JSON.parse(await·readFile(new·URL('../metrics/embed-kpi.json',·import.meta.url),·'utf8'));
+       51 │ + const·html·=·await·readFile(
+       52 │ + ··new·URL("../public/embed/breed/index.html",·import.meta.url),
+       53 │ + ··"utf8",
+       54 │ + );
+       55 │ + const·js·=·await·readFile(
+       56 │ + ··new·URL("../public/embed/breed/widget.js",·import.meta.url),
+       57 │ + ··"utf8",
+       58 │ + );
+       59 │ + const·docs·=·await·readFile(
+       60 │ + ··new·URL("../docs/embed.md",·import.meta.url),
+       61 │ + ··"utf8",
+       62 │ + );
+       63 │ + const·readme·=·await·readFile(new·URL("../README.md",·import.meta.url),·"utf8");
+       64 │ + const·metrics·=·JSON.parse(
+       65 │ + ··await·readFile(new·URL("../metrics/embed-kpi.json",·import.meta.url),·"utf8"),
+       66 │ + );
+    33 67 │   
+    34 68 │   assert.match(html, /id="widget"/);
+    35 69 │   assert.match(html, /\.\/widget\.js/);
+    36    │ - for·(const·event·of·['embed_loaded',·'breed_searched',·'pal_atlas_opened'])·assert.match(js,·new·RegExp(event));
+       70 │ + for·(const·event·of·["embed_loaded",·"breed_searched",·"pal_atlas_opened"])
+       71 │ + ··assert.match(js,·new·RegExp(event));
+    37 72 │   assert.match(js, /非公式ファンプロジェクト/);
+    38 73 │   assert.match(js, /\.\.\/\.\.\/api\/pals\.json/);
+    39 74 │   assert.match(js, /\.\.\/\.\.\/api\/breeding\.json/);
+    40    │ - assert.match(docs,·/https:\/\/kafka2306\.github\.io\/pal-atlas\/embed\/breed\//);
+       75 │ + assert.match(
+       76 │ + ··docs,
+       77 │ + ··/https:\/\/kafka2306\.github\.io\/pal-atlas\/embed\/breed\//,
+       78 │ + );
+    41 79 │   assert.match(docs, /partner=example-site&campaign=breeding-guide/);
+    42    │ - assert.match(readme,·/https:\/\/kafka2306\.github\.io\/pal-atlas\/embed\/breed\//);
+       80 │ + assert.match(
+       81 │ + ··readme,
+       82 │ + ··/https:\/\/kafka2306\.github\.io\/pal-atlas\/embed\/breed\//,
+       83 │ + );
+    43 84 │   assert.match(readme, /docs\/embed\.md/);
+    44 85 │   
+    ····· │ 
+    53 94 │   assert.match(metrics.note, /Only append observed, evidenced events/);
+    54 95 │   
+    55    │ - console.log('embed·contract·tests·passed');
+       96 │ + console.log("embed·contract·tests·passed");
+    56 97 │   
+  
+
+scripts/verify-data.mjs format ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Formatter would have printed the following content:
+  
+     1     │ - import·{·readFile·}·from·'node:fs/promises';
+         1 │ + import·{·readFile·}·from·"node:fs/promises";
+     2   2 │   
+     3     │ - const·ROOT·=·new·URL('..',·import.meta.url).pathname;
+     4     │ - const·readJson·=·async·(name)·=>·JSON.parse(await·readFile(`${ROOT}/data/${name}`,·'utf8'));
+     5     │ - const·palData·=·await·readJson('pals.json');
+     6     │ - const·breedingData·=·await·readJson('breeding.json');
+     7     │ - const·childrenData·=·await·readJson('children.json');
+     8     │ - const·sourceData·=·await·readJson('sources.json');
+     9     │ - const·conflictData·=·await·readJson('conflicts.json');
+         3 │ + const·ROOT·=·new·URL("..",·import.meta.url).pathname;
+         4 │ + const·readJson·=·async·(name)·=>
+         5 │ + ··JSON.parse(await·readFile(`${ROOT}/data/${name}`,·"utf8"));
+         6 │ + const·palData·=·await·readJson("pals.json");
+         7 │ + const·breedingData·=·await·readJson("breeding.json");
+         8 │ + const·childrenData·=·await·readJson("children.json");
+         9 │ + const·sourceData·=·await·readJson("sources.json");
+        10 │ + const·conflictData·=·await·readJson("conflicts.json");
+    10  11 │   const pals = palData.pals;
+    11  12 │   const byId = new Map(pals.map((pal) => [pal.id, pal]));
+    12  13 │   const eligible = pals
+    13  14 │     .filter((pal) => !pal.ignoreCombi)
+    14     │ - ··.sort((a,·b)·=>·a.breedingRank·-·b.breedingRank·||·a.sourceIndex·-·b.sourceIndex·||·a.order·-·b.order);
+        15 │ + ··.sort(
+        16 │ + ····(a,·b)·=>
+        17 │ + ······a.breedingRank·-·b.breedingRank·||
+        18 │ + ······a.sourceIndex·-·b.sourceIndex·||
+        19 │ + ······a.order·-·b.order,
+        20 │ + ··);
+    15  21 │   
+    16  22 │   if (pals.length < 250) throw new Error(`catalog too small: ${pals.length}`);
+    17     │ - if·(new·Set(pals.map((pal)·=>·pal.id)).size·!==·pals.length)·throw·new·Error('duplicate·Pal·ids');
+    18     │ - if·(pals.some((pal)·=>·!pal.nameEn·||·!pal.nameJa·||·!Number.isFinite(pal.breedingRank)))·throw·new·Error('incomplete·Pal·fields');
+    19     │ - if·(pals.some((pal)·=>·!pal.imageUrl·||·!pal.imageOriginalUrl·||·!pal.imageReferenceUrl·||·!pal.imageWebpUrl·||·pal.imageDelivery·!==·'webp-proxy'))·throw·new·Error('incomplete·image·URLs');
+    20     │ - if·(sourceData.sources.some((source)·=>·source.url.startsWith('file:')·||·source.role?.includes('/mnt/')))·throw·new·Error('local·path·leaked·into·sources');
+    21     │ - if·(sourceData.sources.some((source)·=>·![1,·2,·3].includes(source.sourceTier)·||·!source.sourceType))·throw·new·Error('source·tier/type·missing');
+    22     │ - if·(sourceData.schemaVersion·!==·'pal-atlas.sources.v1'·||·!sourceData.registryHash)·throw·new·Error('source·registry·provenance·missing');
+    23     │ - if·(conflictData.schemaVersion·!==·'pal-atlas.conflicts.v1')·throw·new·Error('conflict·registry·schema·mismatch');
+    24     │ - if·(conflictData.evaluationStatus·!==·'partial'·||·!conflictData.nullReason)·throw·new·Error('cross-source·comparison·must·fail·closed·while·secondary·claims·are·not·machine·ingested');
+    25     │ - if·(breedingData.normalCount·!==·breedingData.normal.length)·throw·new·Error('normal·pair·count·mismatch');
+    26     │ - if·(breedingData.meta.normalPairCount·!==·breedingData.normal.length·||·breedingData.meta.specialCount·!==·breedingData.special.length)·throw·new·Error('breeding·metadata·mismatch');
+        23 │ + if·(new·Set(pals.map((pal)·=>·pal.id)).size·!==·pals.length)
+        24 │ + ··throw·new·Error("duplicate·Pal·ids");
+        25 │ + if·(
+        26 │ + ··pals.some(
+        27 │ + ····(pal)·=>·!pal.nameEn·||·!pal.nameJa·||·!Number.isFinite(pal.breedingRank),
+        28 │ + ··)
+        29 │ + )
+        30 │ + ··throw·new·Error("incomplete·Pal·fields");
+        31 │ + if·(
+        32 │ + ··pals.some(
+        33 │ + ····(pal)·=>
+        34 │ + ······!pal.imageUrl·||
+        35 │ + ······!pal.imageOriginalUrl·||
+        36 │ + ······!pal.imageReferenceUrl·||
+        37 │ + ······!pal.imageWebpUrl·||
+        38 │ + ······pal.imageDelivery·!==·"webp-proxy",
+        39 │ + ··)
+        40 │ + )
+        41 │ + ··throw·new·Error("incomplete·image·URLs");
+        42 │ + if·(
+        43 │ + ··sourceData.sources.some(
+        44 │ + ····(source)·=>
+        45 │ + ······source.url.startsWith("file:")·||·source.role?.includes("/mnt/"),
+        46 │ + ··)
+        47 │ + )
+        48 │ + ··throw·new·Error("local·path·leaked·into·sources");
+        49 │ + if·(
+        50 │ + ··sourceData.sources.some(
+        51 │ + ····(source)·=>·![1,·2,·3].includes(source.sourceTier)·||·!source.sourceType,
+        52 │ + ··)
+        53 │ + )
+        54 │ + ··throw·new·Error("source·tier/type·missing");
+        55 │ + if·(
+        56 │ + ··sourceData.schemaVersion·!==·"pal-atlas.sources.v1"·||
+        57 │ + ··!sourceData.registryHash
+        58 │ + )
+        59 │ + ··throw·new·Error("source·registry·provenance·missing");
+        60 │ + if·(conflictData.schemaVersion·!==·"pal-atlas.conflicts.v1")
+        61 │ + ··throw·new·Error("conflict·registry·schema·mismatch");
+        62 │ + if·(conflictData.evaluationStatus·!==·"partial"·||·!conflictData.nullReason)
+        63 │ + ··throw·new·Error(
+        64 │ + ····"cross-source·comparison·must·fail·closed·while·secondary·claims·are·not·machine·ingested",
+        65 │ + ··);
+        66 │ + if·(breedingData.normalCount·!==·breedingData.normal.length)
+        67 │ + ··throw·new·Error("normal·pair·count·mismatch");
+        68 │ + if·(
+        69 │ + ··breedingData.meta.normalPairCount·!==·breedingData.normal.length·||
+        70 │ + ··breedingData.meta.specialCount·!==·breedingData.special.length
+        71 │ + )
+        72 │ + ··throw·new·Error("breeding·metadata·mismatch");
+    27  73 │   
+    28  74 │   const pairIds = new Set();
+    ······ │ 
+    35  81 │     if (!a || !b || !child) throw new Error(`unresolved normal row: ${row.id}`);
+    36  82 │     const intermediate = Math.floor((a.breedingRank + b.breedingRank + 1) / 2);
+    37     │ - ··if·(row.intermediatePower·!==·intermediate)·throw·new·Error(`formula·mismatch:·${row.id}`);
+        83 │ + ··if·(row.intermediatePower·!==·intermediate)
+        84 │ + ····throw·new·Error(`formula·mismatch:·${row.id}`);
+    38  85 │     const expected = eligible.reduce((best, candidate) => {
+    39  86 │       const distance = Math.abs(candidate.breedingRank - intermediate);
+    40  87 │       const bestDistance = Math.abs(best.breedingRank - intermediate);
+    41     │ - ····return·distance·<·bestDistance·||·(distance·===·bestDistance·&&·(candidate.sourceIndex·<·best.sourceIndex·||·(candidate.sourceIndex·===·best.sourceIndex·&&·candidate.order·<·best.order)))·?·candidate·:·best;
+        88 │ + ····return·distance·<·bestDistance·||
+        89 │ + ······(distance·===·bestDistance·&&
+        90 │ + ········(candidate.sourceIndex·<·best.sourceIndex·||
+        91 │ + ··········(candidate.sourceIndex·===·best.sourceIndex·&&
+        92 │ + ············candidate.order·<·best.order)))
+        93 │ + ······?·candidate
+        94 │ + ······:·best;
+    42  95 │     }, eligible[0]);
+    43     │ - ··if·(row.child·!==·expected.id)·throw·new·Error(`nearest-rank·mismatch:·${row.id}·->·${row.child},·expected·${expected.id}`);
+    44     │ - ··if·(child.ignoreCombi)·throw·new·Error(`ignored·Pal·selected·as·normal·child:·${child.id}`);
+        96 │ + ··if·(row.child·!==·expected.id)
+        97 │ + ····throw·new·Error(
+        98 │ + ······`nearest-rank·mismatch:·${row.id}·->·${row.child},·expected·${expected.id}`,
+        99 │ + ····);
+       100 │ + ··if·(child.ignoreCombi)
+       101 │ + ····throw·new·Error(`ignored·Pal·selected·as·normal·child:·${child.id}`);
+    45 102 │   }
+    46 103 │   
+    47 104 │   for (const row of breedingData.special) {
+    48     │ - ··if·(row.status·!==·'resolved'·||·!byId.has(row.parentA)·||·!byId.has(row.parentB)·||·!byId.has(row.child))·throw·new·Error(`unresolved·special·row:·${row.id}`);
+       105 │ + ··if·(
+       106 │ + ····row.status·!==·"resolved"·||
+       107 │ + ····!byId.has(row.parentA)·||
+       108 │ + ····!byId.has(row.parentB)·||
+       109 │ + ····!byId.has(row.child)
+       110 │ + ··)
+       111 │ + ····throw·new·Error(`unresolved·special·row:·${row.id}`);
+    49 112 │   }
+    50     │ - if·(new·Set(breedingData.special.map((row)·=>·row.id)).size·!==·breedingData.special.length)·throw·new·Error('duplicate·special·pair·ids');
+    51     │ - if·(Object.keys(childrenData.outputs).length·!==·pals.length)·throw·new·Error('reverse·breeding·index·does·not·cover·catalog');
+       113 │ + if·(
+       114 │ + ··new·Set(breedingData.special.map((row)·=>·row.id)).size·!==
+       115 │ + ··breedingData.special.length
+       116 │ + )
+       117 │ + ··throw·new·Error("duplicate·special·pair·ids");
+       118 │ + if·(Object.keys(childrenData.outputs).length·!==·pals.length)
+       119 │ + ··throw·new·Error("reverse·breeding·index·does·not·cover·catalog");
+    52 120 │   for (const [parent, rows] of Object.entries(childrenData.outputs)) {
+    53     │ - ··if·(!byId.has(parent)·||·rows.some((row)·=>·row.parent·!==·parent·||·!byId.has(row.otherParent)·||·!byId.has(row.child)))·throw·new·Error(`invalid·reverse·breeding·row:·${parent}`);
+       121 │ + ··if·(
+       122 │ + ····!byId.has(parent)·||
+       123 │ + ····rows.some(
+       124 │ + ······(row)·=>
+       125 │ + ········row.parent·!==·parent·||
+       126 │ + ········!byId.has(row.otherParent)·||
+       127 │ + ········!byId.has(row.child),
+       128 │ + ····)
+       129 │ + ··)
+  42 more lines truncated
+  
+
+scripts/verify-repository-ratchet.mjs format ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Formatter would have printed the following content:
+  
+     1    │ - import·{·access,·readFile·}·from·'node:fs/promises';
+        1 │ + import·{·access,·readFile·}·from·"node:fs/promises";
+     2  2 │   
+     3  3 │   const requiredPaths = [
+     4    │ - ··'scripts/fetch-palworld-data.mjs',
+     5    │ - ··'scripts/build-provenance.mjs',
+     6    │ - ··'scripts/verify-data.mjs',
+     7    │ - ··'scripts/build-static-api.mjs',
+     8    │ - ··'ontology/project.yaml',
+     9    │ - ··'index.html',
+    10    │ - ··'public/embed/breed/index.html',
+    11    │ - ··'.github/workflows/deploy-pages.yml',
+    12    │ - ··'docs/architecture/canonical-flow.md',
+        4 │ + ··"scripts/fetch-palworld-data.mjs",
+        5 │ + ··"scripts/build-provenance.mjs",
+        6 │ + ··"scripts/verify-data.mjs",
+        7 │ + ··"scripts/build-static-api.mjs",
+        8 │ + ··"ontology/project.yaml",
+        9 │ + ··"index.html",
+       10 │ + ··"public/embed/breed/index.html",
+       11 │ + ··".github/workflows/deploy-pages.yml",
+       12 │ + ··"docs/architecture/canonical-flow.md",
+    13 13 │   ];
+    14 14 │   
+    ····· │ 
+    17 17 │   }
+    18 18 │   
+    19    │ - const·readme·=·await·readFile('README.md',·'utf8');
+    20    │ - for·(const·marker·of·['配合検索',·'公開API',·'ontology/project.yaml'])·{
+       19 │ + const·readme·=·await·readFile("README.md",·"utf8");
+       20 │ + for·(const·marker·of·["配合検索",·"公開API",·"ontology/project.yaml"])·{
+    21 21 │     if (!readme.includes(marker)) {
+    22 22 │       throw new Error(`README canonical contract missing marker: ${marker}`);
+    ····· │ 
+    25 25 │   
+    26 26 │   try {
+    27    │ - ··await·access('.github/workflows/weekly-repo-research.yml');
+    28    │ - ··throw·new·Error('weekly-repo-research.yml·is·outside·the·canonical·product·flow');
+       27 │ + ··await·access(".github/workflows/weekly-repo-research.yml");
+       28 │ + ··throw·new·Error(
+       29 │ + ····"weekly-repo-research.yml·is·outside·the·canonical·product·flow",
+       30 │ + ··);
+    29 31 │   } catch (error) {
+    30    │ - ··if·(error?.code·!==·'ENOENT')·throw·error;
+       32 │ + ··if·(error?.code·!==·"ENOENT")·throw·error;
+    31 33 │   }
+    32 34 │   
+    33    │ - console.log('PAL·ATLAS·repository·ratchet:·PASS');
+       35 │ + console.log("PAL·ATLAS·repository·ratchet:·PASS");
+    34 36 │   
+  
+
+src/main.js:1:1 assist/source/organizeImports  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Sort these imports.
+  
+  > 1 │ import palData from '../data/pals.json';
+      │ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  > 2 │ import breedingData from '../data/breeding.json';
+  > 3 │ import childrenUiData from '../data/children-ui.json';
+      │ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    4 │ import sourceData from '../data/sources.json';
+    5 │ import './styles.css';
+  
+  i Safe fix: Organize imports and exports (Biome)
+  
+      1     │ - import·palData·from·'../data/pals.json';
+      2     │ - import·breedingData·from·'../data/breeding.json';
+      3     │ - import·childrenUiData·from·'../data/children-ui.json';
+          1 │ + import·breedingData·from·'../data/breeding.json';
+          2 │ + import·childrenUiData·from·'../data/children-ui.json';
+          3 │ + import·palData·from·'../data/pals.json';
+      4   4 │   import sourceData from '../data/sources.json';
+      5   5 │   import './styles.css';
+  
+
+src/main.js format ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Formatter would have printed the following content:
+  
+      1     │ - import·palData·from·'../data/pals.json';
+      2     │ - import·breedingData·from·'../data/breeding.json';
+      3     │ - import·childrenUiData·from·'../data/children-ui.json';
+      4     │ - import·sourceData·from·'../data/sources.json';
+      5     │ - import·'./styles.css';
+          1 │ + import·palData·from·"../data/pals.json";
+          2 │ + import·breedingData·from·"../data/breeding.json";
+          3 │ + import·childrenUiData·from·"../data/children-ui.json";
+          4 │ + import·sourceData·from·"../data/sources.json";
+          5 │ + import·"./styles.css";
+      6   6 │   
+      7   7 │   const pals = palData.pals;
+      8   8 │   const byId = new Map(pals.map((pal) => [pal.id, pal]));
+      9   9 │   const featuredNormal = breedingData.featuredNormal;
+     10     │ - const·special·=·breedingData.special.filter((row)·=>·row.status·===·'resolved');
+         10 │ + const·special·=·breedingData.special.filter((row)·=>·row.status·===·"resolved");
+     11  11 │   const outputs = childrenUiData.outputs;
+     12  12 │   
+     13  13 │   const copy = {
+     14  14 │     ja: {
+     15     │ - ····routes:·'配合ルート',·saved:·'保存',·search:·'パル名を検索',·all:·'すべて',·parents:·'作り方',·children:·'このパルから作る',·outputs:·'配合先',·more:·'すべて表示',·special:·'特殊配合',·normal:·'通常配合',·rank:·'配合値',·sources:·'出典',·insight:·'見えてくる知見',·save:·'配合を保存',·savedState:·'保存済み',·savedRecipes:·'保存した配合',
+     16     │ - ····choose:·'パル一覧',·formula:·'配合ルール',·formulaText:·'親2体の配合値から中間値を出し、最も近い配合値のパルへ着地します。特殊配合はこのルールを上書きします。',
+     17     │ - ····direct:·'固有レシピ',·nearby:·'値が近い親',·unresolved:·'未解決の出典行',
+     18     │ - ····cards:·'パル',·noResult:·'該当するパルがありません。',
+         15 │ + ····routes:·"配合ルート",
+         16 │ + ····saved:·"保存",
+         17 │ + ····search:·"パル名を検索",
+         18 │ + ····all:·"すべて",
+         19 │ + ····parents:·"作り方",
+         20 │ + ····children:·"このパルから作る",
+         21 │ + ····outputs:·"配合先",
+         22 │ + ····more:·"すべて表示",
+         23 │ + ····special:·"特殊配合",
+         24 │ + ····normal:·"通常配合",
+         25 │ + ····rank:·"配合値",
+         26 │ + ····sources:·"出典",
+         27 │ + ····insight:·"見えてくる知見",
+         28 │ + ····save:·"配合を保存",
+         29 │ + ····savedState:·"保存済み",
+         30 │ + ····savedRecipes:·"保存した配合",
+         31 │ + ····choose:·"パル一覧",
+         32 │ + ····formula:·"配合ルール",
+         33 │ + ····formulaText:
+         34 │ + ······"親2体の配合値から中間値を出し、最も近い配合値のパルへ着地します。特殊配合はこのルールを上書きします。",
+         35 │ + ····direct:·"固有レシピ",
+         36 │ + ····nearby:·"値が近い親",
+         37 │ + ····unresolved:·"未解決の出典行",
+         38 │ + ····cards:·"パル",
+         39 │ + ····noResult:·"該当するパルがありません。",
+     19  40 │     },
+     20  41 │     en: {
+     21     │ - ····routes:·'Breeding·routes',·saved:·'Saved',·search:·'Search·Pals',·all:·'All',·parents:·'How·to·make',·children:·'Make·from·this·Pal',·outputs:·'Outputs',·more:·'Show·all',·special:·'Special',·normal:·'Normal',·rank:·'Breeding·Rank',·sources:·'Sources',·insight:·'What·this·reveals',·save:·'Save·recipe',·savedState:·'Saved',·savedRecipes:·'Saved·recipes',
+     22     │ - ····choose:·'Choose·a·Pal',·formula:·'Normal·breeding·rule',·formulaText:·'The·two·parent·ranks·become·an·intermediate·value,·then·resolve·to·the·closest·eligible·Pal·rank.·Special·combinations·override·this·rule.',
+     23     │ - ····direct:·'Exact·recipe',·nearby:·'Rank-near·parent',·unresolved:·'Unresolved·source·row',
+     24     │ - ····cards:·'Pals',·noResult:·'No·Pals·match·this·filter.',
+         42 │ + ····routes:·"Breeding·routes",
+         43 │ + ····saved:·"Saved",
+         44 │ + ····search:·"Search·Pals",
+         45 │ + ····all:·"All",
+         46 │ + ····parents:·"How·to·make",
+         47 │ + ····children:·"Make·from·this·Pal",
+         48 │ + ····outputs:·"Outputs",
+         49 │ + ····more:·"Show·all",
+         50 │ + ····special:·"Special",
+         51 │ + ····normal:·"Normal",
+         52 │ + ····rank:·"Breeding·Rank",
+         53 │ + ····sources:·"Sources",
+         54 │ + ····insight:·"What·this·reveals",
+         55 │ + ····save:·"Save·recipe",
+         56 │ + ····savedState:·"Saved",
+         57 │ + ····savedRecipes:·"Saved·recipes",
+         58 │ + ····choose:·"Choose·a·Pal",
+         59 │ + ····formula:·"Normal·breeding·rule",
+         60 │ + ····formulaText:
+         61 │ + ······"The·two·parent·ranks·become·an·intermediate·value,·then·resolve·to·the·closest·eligible·Pal·rank.·Special·combinations·override·this·rule.",
+         62 │ + ····direct:·"Exact·recipe",
+         63 │ + ····nearby:·"Rank-near·parent",
+         64 │ + ····unresolved:·"Unresolved·source·row",
+         65 │ + ····cards:·"Pals",
+         66 │ + ····noResult:·"No·Pals·match·this·filter.",
+     25  67 │     },
+     26  68 │   };
+    ······· │ 
+     36  78 │   
+     37  79 │   function readSavedRecipes() {
+     38     │ - ··const·value·=·JSON.parse(localStorage.getItem('pal-atlas-saved-recipes')·??·'[]');
+     39     │ - ··return·new·Map(Array.isArray(value)·?·value.filter((row)·=>·row?.id·&&·byId.has(row.parentA)·&&·byId.has(row.parentB)·&&·byId.has(row.child)).map((row)·=>·[row.id,·row])·:·[]);
+         80 │ + ··const·value·=·JSON.parse(
+         81 │ + ····localStorage.getItem("pal-atlas-saved-recipes")·??·"[]",
+         82 │ + ··);
+         83 │ + ··return·new·Map(
+         84 │ + ····Array.isArray(value)
+         85 │ + ······?·value
+         86 │ + ··········.filter(
+         87 │ + ············(row)·=>
+         88 │ + ··············row?.id·&&
+         89 │ + ··············byId.has(row.parentA)·&&
+         90 │ + ··············byId.has(row.parentB)·&&
+         91 │ + ··············byId.has(row.child),
+         92 │ + ··········)
+         93 │ + ··········.map((row)·=>·[row.id,·row])
+         94 │ + ······:·[],
+         95 │ + ··);
+     40  96 │   }
+     41  97 │   
+    ······· │ 
+     44 100 │   
+     45 101 │   const state = {
+     46     │ - ··lang:·readPreference('pal-atlas-lang',·'ja',·['ja',·'en']),
+     47     │ - ··theme:·readPreference('pal-atlas-theme',·'dark',·['dark',·'light']),
+     48     │ - ··stack:·[byId.has('anubis')·?·'anubis'·:·pals[0].id],
+     49     │ - ··search:·'',
+     50     │ - ··element:·'all',
+        102 │ + ··lang:·readPreference("pal-atlas-lang",·"ja",·["ja",·"en"]),
+        103 │ + ··theme:·readPreference("pal-atlas-theme",·"dark",·["dark",·"light"]),
+        104 │ + ··stack:·[byId.has("anubis")·?·"anubis"·:·pals[0].id],
+        105 │ + ··search:·"",
+        106 │ + ··element:·"all",
+     51 107 │     showAllOutputs: false,
+     52 108 │   };
+     53 109 │   
+     54     │ - const·elementLabels·=·{·neutral:·['無',·'Neutral'],·fire:·['火',·'Fire'],·water:·['水',·'Water'],·grass:·['草',·'Grass'],·electric:·['雷',·'Electric'],·ground:·['地',·'Ground'],·ice:·['氷',·'Ice'],·dark:·['闇',·'Dark'],·dragon:·['竜',·'Dragon']·};
+     55     │ - const·elText·=·(element)·=>·elementLabels[element]?.[state.lang·===·'ja'·?·0·:·1]·??·element;
+        110 │ + const·elementLabels·=·{
+        111 │ + ··neutral:·["無",·"Neutral"],
+        112 │ + ··fire:·["火",·"Fire"],
+        113 │ + ··water:·["水",·"Water"],
+        114 │ + ··grass:·["草",·"Grass"],
+        115 │ + ··electric:·["雷",·"Electric"],
+        116 │ + ··ground:·["地",·"Ground"],
+        117 │ + ··ice:·["氷",·"Ice"],
+        118 │ + ··dark:·["闇",·"Dark"],
+        119 │ + ··dragon:·["竜",·"Dragon"],
+        120 │ + };
+        121 │ + const·elText·=·(element)·=>
+        122 │ + ··elementLabels[element]?.[state.lang·===·"ja"·?·0·:·1]·??·element;
+     56 123 │   const t = (key) => copy[state.lang][key] ?? key;
+     57 124 │   const selected = () => byId.get(state.stack.at(-1)) ?? pals[0];
+    ······· │ 
+     59 126 │   
+     60 127 │   function esc(value) {
+     61     │ - ··return·String(value).replace(/[&<>"']/g,·(char)·=>·({·'&':·'&amp;',·'<':·'&lt;',·'>':·'&gt;',·'"':·'&quot;',·"'":·'&#39;'·})[char]);
+        128 │ + ··return·String(value).replace(
+        129 │ + ····/[&<>"']/g,
+        130 │ + ····(char)·=>
+        131 │ + ······({·"&":·"&amp;",·"<":·"&lt;",·">":·"&gt;",·'"':·"&quot;",·"'":·"&#39;"·})[
+        132 │ + ········char
+        133 │ + ······],
+        134 │ + ··);
+     62 135 │   }
+     63 136 │   
+     64 137 │   function palName(pal) {
+     65     │ - ··return·state.lang·===·'ja'·?·pal.nameJa·:·pal.nameEn;
+  354 more lines truncated
+  
+
+src/styles.css format ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Formatter would have printed the following content:
+  
+     23   23 │   }
+     24   24 │   
+     25      │ - *·{·box-sizing:·border-box;·}
+     26      │ - html·{·scroll-behavior:·smooth;·}
+          25 │ + *·{
+          26 │ + ··box-sizing:·border-box;
+          27 │ + }
+          28 │ + html·{
+          29 │ + ··scroll-behavior:·smooth;
+          30 │ + }
+     27   31 │   body {
+     28   32 │     margin: 0;
+    ········ │ 
+     31   35 │     font-family: var(--sans);
+     32   36 │     background:
+     33      │ - ····radial-gradient(circle·at·7%·3%,·rgba(144,·183,·237,·0.28),·transparent·29rem),
+     34      │ - ····radial-gradient(circle·at·93%·8%,·rgba(187,·169,·230,·0.22),·transparent·27rem),
+     35      │ - ····radial-gradient(circle·at·18%·55%,·rgba(239,·181,·193,·0.15),·transparent·25rem),
+     36      │ - ····radial-gradient(circle·at·86%·78%,·rgba(185,·220,·201,·0.19),·transparent·27rem),
+          37 │ + ····radial-gradient(
+          38 │ + ······circle·at·7%·3%,
+          39 │ + ······rgba(144,·183,·237,·0.28),
+          40 │ + ······transparent·29rem
+          41 │ + ····),
+          42 │ + ····radial-gradient(
+          43 │ + ······circle·at·93%·8%,
+          44 │ + ······rgba(187,·169,·230,·0.22),
+          45 │ + ······transparent·27rem
+          46 │ + ····),
+          47 │ + ····radial-gradient(
+          48 │ + ······circle·at·18%·55%,
+          49 │ + ······rgba(239,·181,·193,·0.15),
+          50 │ + ······transparent·25rem
+          51 │ + ····),
+          52 │ + ····radial-gradient(
+          53 │ + ······circle·at·86%·78%,
+          54 │ + ······rgba(185,·220,·201,·0.19),
+          55 │ + ······transparent·27rem
+          56 │ + ····),
+     37   57 │       linear-gradient(rgba(255, 255, 255, 0.42), rgba(255, 255, 255, 0.42)),
+     38   58 │       var(--canvas);
+    ········ │ 
+     46   66 │     pointer-events: none;
+     47   67 │     opacity: 0.22;
+     48      │ - ··background-image:·repeating-linear-gradient(0deg,·rgba(53,·67,·94,·0.025)·0·1px,·transparent·1px·4px);
+          68 │ + ··background-image:·repeating-linear-gradient(
+          69 │ + ····0deg,
+          70 │ + ····rgba(53,·67,·94,·0.025)·0·1px,
+          71 │ + ····transparent·1px·4px
+          72 │ + ··);
+     49   73 │     mix-blend-mode: multiply;
+     50   74 │   }
+     51      │ - button,·input,·select·{·font:·inherit;·}
+     52      │ - button·{·color:·inherit;·}
+     53      │ - a·{·color:·inherit;·}
+     54      │ - button,·a,·input,·select·{·-webkit-tap-highlight-color:·transparent;·}
+     55      │ - [data-theme-toggle]·{·display:·none·!important;·}
+          75 │ + button,
+          76 │ + input,
+          77 │ + select·{
+          78 │ + ··font:·inherit;
+          79 │ + }
+          80 │ + button·{
+          81 │ + ··color:·inherit;
+          82 │ + }
+          83 │ + a·{
+          84 │ + ··color:·inherit;
+          85 │ + }
+          86 │ + button,
+          87 │ + a,
+          88 │ + input,
+          89 │ + select·{
+          90 │ + ··-webkit-tap-highlight-color:·transparent;
+          91 │ + }
+          92 │ + [data-theme-toggle]·{
+          93 │ + ··display:·none·!important;
+          94 │ + }
+     56   95 │   
+     57      │ - .shell·{·width:·min(1520px,·calc(100%·-·48px));·margin:·0·auto;·padding:·22px·0·72px;·}
+          96 │ + .shell·{
+          97 │ + ··width:·min(1520px,·calc(100%·-·48px));
+          98 │ + ··margin:·0·auto;
+          99 │ + ··padding:·22px·0·72px;
+         100 │ + }
+     58  101 │   .topbar {
+     59  102 │     position: sticky;
+    ········ │ 
+     90  133 │     border-radius: 50%;
+     91  134 │     color: var(--blue-strong);
+     92      │ - ··background:·radial-gradient(circle·at·35%·30%,·rgba(255,255,255,.95),·rgba(144,183,237,.24));
+         135 │ + ··background:·radial-gradient(
+         136 │ + ····circle·at·35%·30%,
+         137 │ + ····rgba(255,·255,·255,·0.95),
+         138 │ + ····rgba(144,·183,·237,·0.24)
+         139 │ + ··);
+     93  140 │     font: 0.8rem var(--mono);
+     94  141 │   }
+     95      │ - .topbar-search·{·flex:·1;·max-width:·520px;·}
+     96      │ - .topbar·nav·{·display:·flex;·align-items:·center;·gap:·7px;·}
+     97      │ - .text-button,·.icon-button·{·border:·1px·solid·transparent;·background:·transparent;·cursor:·pointer;·}
+     98      │ - .text-button·{·padding:·8px·10px;·color:·var(--muted);·font-size:·0.84rem;·font-weight:·700;·}
+     99      │ - .text-button:hover·{·color:·var(--blue-strong);·}
+         142 │ + .topbar-search·{
+         143 │ + ··flex:·1;
+         144 │ + ··max-width:·520px;
+         145 │ + }
+         146 │ + .topbar·nav·{
+         147 │ + ··display:·flex;
+         148 │ + ··align-items:·center;
+         149 │ + ··gap:·7px;
+         150 │ + }
+         151 │ + .text-button,
+         152 │ + .icon-button·{
+         153 │ + ··border:·1px·solid·transparent;
+         154 │ + ··background:·transparent;
+         155 │ + ··cursor:·pointer;
+         156 │ + }
+         157 │ + .text-button·{
+         158 │ + ··padding:·8px·10px;
+         159 │ + ··color:·var(--muted);
+         160 │ + ··font-size:·0.84rem;
+         161 │ + ··font-weight:·700;
+         162 │ + }
+         163 │ + .text-button:hover·{
+         164 │ + ··color:·var(--blue-strong);
+         165 │ + }
+    100  166 │   .icon-button {
+    101  167 │     display: grid;
+    ········ │ 
+    106  172 │     border-radius: 50%;
+    107  173 │     color: var(--muted);
+    108      │ - ··background:·rgba(255,255,255,.58);
+         174 │ + ··background:·rgba(255,·255,·255,·0.58);
+    109  175 │     cursor: pointer;
+    110  176 │   }
+    111      │ - .icon-button:hover·{·border-color:·rgba(95,134,207,.42);·color:·var(--blue-strong);·}
+         177 │ + .icon-button:hover·{
+         178 │ + ··border-color:·rgba(95,·134,·207,·0.42);
+         179 │ + ··color:·var(--blue-strong);
+         180 │ + }
+    112  181 │   
+    113      │ - .micro-label·{·color:·var(--blue-strong);·font:·700·0.68rem·var(--mono);·letter-spacing:·0.12em;·text-transform:·uppercase;·}
+    114      │ - .workspace·{·display:·grid;·grid-template-columns:·minmax(0,·1.55fr)·minmax(340px,·0.72fr);·gap:·30px;·padding-top:·34px;·}
+    115      │ - .main-column,·.detail-column·{·min-width:·0;·}
+    116      │ - .section-head·{·display:·flex;·align-items:·end;·justify-content:·space-between;·gap:·16px;·margin-bottom:·18px;·}
+    117      │ - .section-head·h2,·.output-panel·h2,·.source-section·h2·{
+         182 │ + .micro-label·{
+         183 │ + ··color:·var(--blue-strong);
+         184 │ + ··font:·700·0.68rem·var(--mono);
+         185 │ + ··letter-spacing:·0.12em;
+         186 │ + ··text-transform:·uppercase;
+         187 │ + }
+         188 │ + .workspace·{
+         189 │ + ··display:·grid;
+  958 more lines truncated
+  
+
+vite.config.js format ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Formatter would have printed the following content:
+  
+    1   │ - import·{·defineConfig·}·from·'vite';
+      1 │ + import·{·defineConfig·}·from·"vite";
+    2 2 │   
+    3   │ - const·[,·repository·=·'']·=·(process.env.GITHUB_REPOSITORY·||·'').split('/');
+      3 │ + const·[,·repository·=·""]·=·(process.env.GITHUB_REPOSITORY·||·"").split("/");
+    4 4 │   
+    5 5 │   export default defineConfig({
+    6   │ - ··base:·repository·?·`/${repository}/`·:·'/',
+      6 │ + ··base:·repository·?·`/${repository}/`·:·"/",
+    7 7 │   });
+    8 8 │   
+  
+
+Checked 15 files in 22ms. No fixes applied.
+Found 16 errors.
+check ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Some errors were emitted while running checks.
+  
+
+exit_code=1
+
+===== oxlint =====
+::warning file=scripts/build-static-api.mjs,line=19,endLine=19,col=7,endColumn=14,title=eslint(no-unused-vars)::scripts/build-static-api.mjs:19:7: Variable 'palById' is declared but never used. Unused variables should start with a '_'.
+::warning file=navigate/navigate.js,line=1,endLine=1,col=5488,endColumn=5533,title=eslint(no-unused-expressions)::navigate/navigate.js:1:5488: Expected expression to be used
+::warning file=navigate/navigate.js,line=1,endLine=1,col=6507,endColumn=6552,title=eslint(no-unused-expressions)::navigate/navigate.js:1:6507: Expected expression to be used
+
+Found 3 warnings and 0 errors.
+Finished in 10ms on 12 files with 96 rules using 4 threads.
+exit_code=0
+
+===== ruff format =====
+unformatted: File would be reformatted
+  --> scripts/interaction-audit.py:17:16
+   |
+16 |
+   -     results = {"cards": page.locator(".pal-card").count(), "first_rank": page.locator(".pal-card .card-rank").first.inner_text()}
+17 +     results = {
+18 +         "cards": page.locator(".pal-card").count(),
+19 +         "first_rank": page.locator(".pal-card .card-rank").first.inner_text(),
+20 +     }
+21 |     results["recipe_anchor"] = page.locator("#recipe-view").count()
+   |
+
+unformatted: File would be reformatted
+   --> scripts/pal_mcp_read_model.py:58:32
+    |
+57  |     return {
+    -         str(row.get("id")): row
+    -         for row in source_data.get("sources", [])
+    -         if isinstance(row, dict) and row.get("id")
+58  +         str(row.get("id")): row for row in source_data.get("sources", []) if isinstance(row, dict) and row.get("id")
+59  |     }
+--------------------------------------------------------------------------------
+102 |         rows = [
+    -             row for row in rows
+103 +             row
+104 +             for row in rows
+105 |             if needle in f"{row.get('id', '')} {row.get('nameEn', '')} {row.get('nameJa', '')}".casefold()
+--------------------------------------------------------------------------------
+158 | ) -> dict[str, Any]:
+    -     derivation = "deterministic nearest-breeding-rank formula" if kind == "normal_formula" else "source-reported special combination"
+159 +     derivation = (
+160 +         "deterministic nearest-breeding-rank formula"
+161 +         if kind == "normal_formula"
+162 +         else "source-reported special combination"
+163 +     )
+164 |     return {
+    |
+
+unformatted: File would be reformatted
+  --> scripts/smoke-test.py:10:22
+   |
+9  |     page.goto(os.environ.get("PAL_ATLAS_URL", "http://127.0.0.1:5173"), wait_until="domcontentloaded")
+   -     for endpoint in ("/api/index.json", "/api/pals.json", "/api/breeding.json", "/api/sources.json", "/api/pals/anubis.json"):
+   -         assert page.request.get(os.environ.get("PAL_ATLAS_URL", "http://127.0.0.1:5173") + endpoint).ok, f"static API failed: {endpoint}"
+   -     anubis_detail = page.request.get(os.environ.get("PAL_ATLAS_URL", "http://127.0.0.1:5173") + "/api/pals/anubis.json").json()
+10 +     for endpoint in (
+11 +         "/api/index.json",
+12 +         "/api/pals.json",
+13 +         "/api/breeding.json",
+14 +         "/api/sources.json",
+15 +         "/api/pals/anubis.json",
+16 +     ):
+17 +         assert page.request.get(os.environ.get("PAL_ATLAS_URL", "http://127.0.0.1:5173") + endpoint).ok, (
+18 +             f"static API failed: {endpoint}"
+19 +         )
+20 +     anubis_detail = page.request.get(
+21 +         os.environ.get("PAL_ATLAS_URL", "http://127.0.0.1:5173") + "/api/pals/anubis.json"
+22 +     ).json()
+23 |     assert len(anubis_detail["recipes"]["outputs"]) > 0, "reverse output index is empty"
+--------------------------------------------------------------------------------
+29 |     assert page.locator(".recipe-row").count() >= 1, "recipe rows did not render"
+   -     assert page.locator(".recipe-row .recipe-pal.parent-a").count() == page.locator(".recipe-row .recipe-pal.parent-b").count(), "parent slots are not paired"
+   -     assert page.locator(".recipe-row .recipe-pal.target").evaluate_all("els => els.every(el => el.tagName === 'SPAN')"), "recipe targets must not be clickable"
+30 +     assert (
+31 +         page.locator(".recipe-row .recipe-pal.parent-a").count()
+32 +         == page.locator(".recipe-row .recipe-pal.parent-b").count()
+33 +     ), "parent slots are not paired"
+34 +     assert page.locator(".recipe-row .recipe-pal.target").evaluate_all(
+35 +         "els => els.every(el => el.tagName === 'SPAN')"
+36 +     ), "recipe targets must not be clickable"
+37 |     assert page.locator(".output-panel").count() == 1, "reverse output panel did not render"
+--------------------------------------------------------------------------------
+49 |     page.wait_for_selector(".more-button", state="detached")
+   -     assert page.locator(".output-card").count() == len(anubis_detail["recipes"]["outputs"]), "all output recipes did not load"
+50 +     assert page.locator(".output-card").count() == len(anubis_detail["recipes"]["outputs"]), (
+51 +         "all output recipes did not load"
+52 +     )
+53 |     output_name = page.locator(".output-card strong").first.inner_text()
+   |
+
+unformatted: File would be reformatted
+   --> tests/test_pal_mcp_contract.py:115:12
+    |
+114 |     assert conflicts["evaluation_status"] == "partial"
+    -     assert conflicts["null_reason"] == "registered_cross_check_sources_are_not_all_machine_ingested_as_field_level_claims"
+115 +     assert (
+116 +         conflicts["null_reason"] == "registered_cross_check_sources_are_not_all_machine_ingested_as_field_level_claims"
+117 +     )
+118 |     assert public_conflicts["evaluationStatus"] == "partial"
+    |
+
+4 files would be reformatted, 1 file already formatted
+exit_code=1
+
+===== ruff lint =====
+I001 [*] Import block is un-sorted or un-formatted
+ --> scripts/interaction-audit.py:1:1
+  |
+1 | / import os
+2 | | from playwright.sync_api import sync_playwright
+  | |_______________________________________________^
+3 |
+4 |   url = os.environ.get("PAL_ATLAS_URL", "http://127.0.0.1:5173")
+  |
+help: Organize imports
+  |
+1 | import os
+2 +
+3 | from playwright.sync_api import sync_playwright
+  |
+
+E501 Line too long (129 > 120)
+  --> scripts/interaction-audit.py:17:121
+   |
+15 |     print("loaded", flush=True)
+16 |
+17 |     results = {"cards": page.locator(".pal-card").count(), "first_rank": page.locator(".pal-card .card-rank").first.inner_text()}
+   |                                                                                                                         ^^^^^^^^^
+18 |     results["recipe_anchor"] = page.locator("#recipe-view").count()
+19 |     results["recipe_panel_visible"] = page.locator(".recipe-panel").is_visible()
+   |
+
+E501 Line too long (133 > 120)
+   --> scripts/pal_mcp_read_model.py:160:121
+    |
+158 |     row: dict[str, Any], *, kind: str, meta: dict[str, Any], source_data: dict[str, Any]
+159 | ) -> dict[str, Any]:
+160 |     derivation = "deterministic nearest-breeding-rank formula" if kind == "normal_formula" else "source-reported special combination"
+    |                                                                                                                         ^^^^^^^^^^^^^
+161 |     return {
+162 |         **row,
+    |
+
+I001 [*] Import block is un-sorted or un-formatted
+ --> scripts/pal_mcp_server.py:1:1
+  |
+1 | / from __future__ import annotations
+2 | |
+3 | | from typing import Any
+4 | |
+5 | | from mcp.server import MCPServer
+6 | |
+7 | | import pal_mcp_read_model as read_model
+  | |_______________________________________^
+8 |
+9 |   mcp = MCPServer(
+  |
+help: Organize imports
+  |
+4 |
+  - from mcp.server import MCPServer
+  -
+5 | import pal_mcp_read_model as read_model
+6 + from mcp.server import MCPServer
+7 |
+  |
+
+I001 [*] Import block is un-sorted or un-formatted
+ --> scripts/smoke-test.py:1:1
+  |
+1 | / import os
+2 | | from playwright.sync_api import sync_playwright
+  | |_______________________________________________^
+3 |
+4 |   errors = []
+  |
+help: Organize imports
+  |
+1 | import os
+2 +
+3 | from playwright.sync_api import sync_playwright
+  |
+
+E501 Line too long (126 > 120)
+  --> scripts/smoke-test.py:10:121
+   |
+ 8 |     page.on("console", lambda message: errors.append(message.text) if message.type == "error" else None)
+ 9 |     page.goto(os.environ.get("PAL_ATLAS_URL", "http://127.0.0.1:5173"), wait_until="domcontentloaded")
+10 |     for endpoint in ("/api/index.json", "/api/pals.json", "/api/breeding.json", "/api/sources.json", "/api/pals/anubis.json"):
+   |                                                                                                                         ^^^^^^
+11 |         assert page.request.get(os.environ.get("PAL_ATLAS_URL", "http://127.0.0.1:5173") + endpoint).ok, f"static API failed: {endpoin…
+12 |     anubis_detail = page.request.get(os.environ.get("PAL_ATLAS_URL", "http://127.0.0.1:5173") + "/api/pals/anubis.json").json()
+   |
+
+E501 Line too long (137 > 120)
+  --> scripts/smoke-test.py:11:121
+   |
+ 9 | …1:5173"), wait_until="domcontentloaded")
+10 | …i/breeding.json", "/api/sources.json", "/api/pals/anubis.json"):
+11 | …, "http://127.0.0.1:5173") + endpoint).ok, f"static API failed: {endpoint}"
+   |                                                            ^^^^^^^^^^^^^^^^^
+12 | …_URL", "http://127.0.0.1:5173") + "/api/pals/anubis.json").json()
+13 | …rse output index is empty"
+   |
+
+E501 Line too long (127 > 120)
+  --> scripts/smoke-test.py:12:121
+   |
+10 |     for endpoint in ("/api/index.json", "/api/pals.json", "/api/breeding.json", "/api/sources.json", "/api/pals/anubis.json"):
+11 |         assert page.request.get(os.environ.get("PAL_ATLAS_URL", "http://127.0.0.1:5173") + endpoint).ok, f"static API failed: {endpoin…
+12 |     anubis_detail = page.request.get(os.environ.get("PAL_ATLAS_URL", "http://127.0.0.1:5173") + "/api/pals/anubis.json").json()
+   |                                                                                                                         ^^^^^^^
+13 |     assert len(anubis_detail["recipes"]["outputs"]) > 0, "reverse output index is empty"
+14 |     page.wait_for_selector(".pal-card")
+   |
+
+E501 Line too long (158 > 120)
+  --> scripts/smoke-test.py:20:121
+   |
+18 | … did not render"
+19 | … render"
+20 | …ge.locator(".recipe-row .recipe-pal.parent-b").count(), "parent slots are not paired"
+   |                                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+21 | …ls => els.every(el => el.tagName === 'SPAN')"), "recipe targets must not be clickable"
+22 | …nel did not render"
+   |
+
+E501 Line too long (159 > 120)
+  --> scripts/smoke-test.py:21:121
+   |
+19 | … render"
+20 | …ge.locator(".recipe-row .recipe-pal.parent-b").count(), "parent slots are not paired"
+21 | …ls => els.every(el => el.tagName === 'SPAN')"), "recipe targets must not be clickable"
+   |                                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+22 | …nel did not render"
+23 | …s did not render"
+   |
+
+E501 Line too long (126 > 120)
+  --> scripts/smoke-test.py:35:121
+   |
+33 |     page.locator(".more-button").click()
+34 |     page.wait_for_selector(".more-button", state="detached")
+35 |     assert page.locator(".output-card").count() == len(anubis_detail["recipes"]["outputs"]), "all output recipes did not load"
+   |                                                                                                                         ^^^^^^
+36 |     output_name = page.locator(".output-card strong").first.inner_text()
+37 |     page.locator(".output-card .output-open").first.click()
+   |
+
+E501 Line too long (122 > 120)
+   --> tests/test_pal_mcp_contract.py:115:121
+    |
+113 |     public_conflicts = load_public("conflicts.json")
+114 |     assert conflicts["evaluation_status"] == "partial"
+115 |     assert conflicts["null_reason"] == "registered_cross_check_sources_are_not_all_machine_ingested_as_field_level_claims"
+    |                                                                                                                         ^^
+116 |     assert public_conflicts["evaluationStatus"] == "partial"
+117 |     assert public_conflicts["nullReason"] == conflicts["null_reason"]
+    |
+
+Found 12 errors.
+[*] 3 fixable with the `--fix` option.
+exit_code=1
+
+===== pyrefly baseline =====
+ INFO Checking project configured at `/home/runner/work/pal-atlas/pal-atlas/pyproject.toml`
+ERROR Cannot find module `playwright.sync_api` [missing-import]
+ --> scripts/interaction-audit.py:2:1
+  |
+2 | from playwright.sync_api import sync_playwright
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  Looked in these locations (from config in `/home/runner/work/pal-atlas/pal-atlas/pyproject.toml`):
+  Import root (inferred from project layout): "/home/runner/work/pal-atlas/pal-atlas/src"
+  Site package path queried from interpreter: ["/home/runner/work/pal-atlas/pal-atlas/.venv/lib/python3.12/site-packages"]
+ERROR Type of lambda parameter `error` is unknown [implicit-any-lambda]
+  --> scripts/interaction-audit.py:11:33
+   |
+11 |     page.on("pageerror", lambda error: page_errors.append(str(error)))
+   |                                 ^^^^^
+   |
+ERROR Type of lambda parameter `message` is unknown [implicit-any-lambda]
+  --> scripts/interaction-audit.py:12:31
+   |
+12 |     page.on("console", lambda message: console_errors.append(message.text) if message.type == "error" else None)
+   |                               ^^^^^^^
+   |
+ERROR Cannot find module `mcp.server` [missing-import]
+ --> scripts/pal_mcp_server.py:5:1
+  |
+5 | from mcp.server import MCPServer
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  Did you mean `http.server`?
+  Looked in these locations (from config in `/home/runner/work/pal-atlas/pal-atlas/pyproject.toml`):
+  Import root (inferred from project layout): "/home/runner/work/pal-atlas/pal-atlas/src"
+  Site package path queried from interpreter: ["/home/runner/work/pal-atlas/pal-atlas/.venv/lib/python3.12/site-packages"]
+ERROR Cannot find module `pal_mcp_read_model` [missing-import]
+ --> scripts/pal_mcp_server.py:7:8
+  |
+7 | import pal_mcp_read_model as read_model
+  |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  Looked in these locations (from config in `/home/runner/work/pal-atlas/pal-atlas/pyproject.toml`):
+  Import root (inferred from project layout): "/home/runner/work/pal-atlas/pal-atlas/src"
+  Site package path queried from interpreter: ["/home/runner/work/pal-atlas/pal-atlas/.venv/lib/python3.12/site-packages"]
+ERROR Cannot find module `playwright.sync_api` [missing-import]
+ --> scripts/smoke-test.py:2:1
+  |
+2 | from playwright.sync_api import sync_playwright
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  Looked in these locations (from config in `/home/runner/work/pal-atlas/pal-atlas/pyproject.toml`):
+  Import root (inferred from project layout): "/home/runner/work/pal-atlas/pal-atlas/src"
+  Site package path queried from interpreter: ["/home/runner/work/pal-atlas/pal-atlas/.venv/lib/python3.12/site-packages"]
+ERROR Type of lambda parameter `message` is unknown [implicit-any-lambda]
+ --> scripts/smoke-test.py:8:31
+  |
+8 |     page.on("console", lambda message: errors.append(message.text) if message.type == "error" else None)
+  |                               ^^^^^^^
+  |
+ERROR Cannot find module `pal_mcp_read_model` [missing-import]
+  --> tests/test_pal_mcp_contract.py:12:8
+   |
+12 | import pal_mcp_read_model as read_model  # noqa: E402
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+  Looked in these locations (from config in `/home/runner/work/pal-atlas/pal-atlas/pyproject.toml`):
+  Import root (inferred from project layout): "/home/runner/work/pal-atlas/pal-atlas/src"
+  Site package path queried from interpreter: ["/home/runner/work/pal-atlas/pal-atlas/.venv/lib/python3.12/site-packages"]
+ERROR Cannot find module `pal_mcp_server` [missing-import]
+  --> tests/test_pal_mcp_contract.py:13:8
+   |
+13 | import pal_mcp_server as server  # noqa: E402
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+  Looked in these locations (from config in `/home/runner/work/pal-atlas/pal-atlas/pyproject.toml`):
+  Import root (inferred from project layout): "/home/runner/work/pal-atlas/pal-atlas/src"
+  Site package path queried from interpreter: ["/home/runner/work/pal-atlas/pal-atlas/.venv/lib/python3.12/site-packages"]
+ERROR Cannot determine the type parameter `_KT` for generic class `dict[_KT, _VT]` [implicit-any-type-argument]
+  --> tests/test_pal_mcp_contract.py:16:29
+   |
+16 | def load_data(name: str) -> dict:
+   |                             ^^^^
+   |
+  Either specify the type argument explicitly, or specify a default for the type variable.
+ERROR Cannot determine the type parameter `_VT` for generic class `dict[_KT, _VT]` [implicit-any-type-argument]
+  --> tests/test_pal_mcp_contract.py:16:29
+   |
+16 | def load_data(name: str) -> dict:
+   |                             ^^^^
+   |
+  Either specify the type argument explicitly, or specify a default for the type variable.
+ERROR Cannot determine the type parameter `_KT` for generic class `dict[_KT, _VT]` [implicit-any-type-argument]
+  --> tests/test_pal_mcp_contract.py:20:31
+   |
+20 | def load_public(name: str) -> dict:
+   |                               ^^^^
+   |
+  Either specify the type argument explicitly, or specify a default for the type variable.
+ERROR Cannot determine the type parameter `_VT` for generic class `dict[_KT, _VT]` [implicit-any-type-argument]
+  --> tests/test_pal_mcp_contract.py:20:31
+   |
+20 | def load_public(name: str) -> dict:
+   |                               ^^^^
+   |
+  Either specify the type argument explicitly, or specify a default for the type variable.
+ INFO 13 errors
+exit_code=1
+
+===== pyrefly check =====
+ INFO Checking project configured at `/home/runner/work/pal-atlas/pal-atlas/pyproject.toml`
+ INFO 0 errors
+exit_code=0
+
+===== pytest =====
+
+==================================== ERRORS ====================================
+_______________ ERROR collecting tests/test_pal_mcp_contract.py ________________
+ImportError while importing test module '/home/runner/work/pal-atlas/pal-atlas/tests/test_pal_mcp_contract.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/opt/hostedtoolcache/Python/3.12.13/x64/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_pal_mcp_contract.py:13: in <module>
+    import pal_mcp_server as server  # noqa: E402
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+scripts/pal_mcp_server.py:5: in <module>
+    from mcp.server import MCPServer
+E   ModuleNotFoundError: No module named 'mcp'
+=========================== short test summary info ============================
+ERROR tests/test_pal_mcp_contract.py
+!!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!
+1 error in 0.25s
+exit_code=2
+
+===== repository ratchet =====
+
+> pal-atlas@0.1.0 verify:ratchet
+> node scripts/verify-repository-ratchet.mjs
+
+PAL ATLAS repository ratchet: PASS
+exit_code=0
+
+===== embed test =====
+
+> pal-atlas@0.1.0 test:embed
+> node scripts/test-embed.mjs
+
+embed contract tests passed
+exit_code=0
