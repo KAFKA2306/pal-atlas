@@ -76,8 +76,9 @@ floor((rankA + rankB + 1) / 2)
 - Neo4jで親子graphを探索
 - MCPからcanonical static dataを読む
 
-## Public API
+## 公開API
 
+- [API index](https://kafka2306.github.io/pal-atlas/api/index.json)
 - [Pal catalog](https://kafka2306.github.io/pal-atlas/api/pals.json)
 - [Breeding pairs](https://kafka2306.github.io/pal-atlas/api/breeding.json)
 - [Sources](https://kafka2306.github.io/pal-atlas/api/sources.json)
