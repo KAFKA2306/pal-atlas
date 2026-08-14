@@ -56,6 +56,9 @@ jobs:
           uv run --no-sync ruff format --check scripts tests
           uv run --no-sync ruff check scripts tests
           uv run --no-sync pyrefly check
+      - name: Materialize canonical data and verify MCP contract
+        run: |
+          npm run data
           uv run --no-sync pytest -q tests/test_pal_mcp_contract.py
       - name: Verify existing JavaScript contracts
         run: |
