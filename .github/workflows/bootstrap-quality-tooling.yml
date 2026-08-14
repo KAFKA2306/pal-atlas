@@ -1,0 +1,71 @@
+name: Bootstrap Quality Tooling
+
+on:
+  push:
+    branches: ["chore/quality-gates-2026"]
+    paths:
+      - ".github/workflows/bootstrap-quality-tooling.yml"
+      - "pyproject.toml"
+      - "biome.json"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: astral-sh/setup-uv@v9.0.0
+      - name: Install current quality tools and lock dependencies
+        run: |
+          npm install --save-dev --save-exact @biomejs/biome@latest oxlint@latest
+          uv lock
+          npm ci
+          uv sync --locked --only-group dev
+      - name: Capture real repository quality baseline
+        shell: bash
+        run: |
+          set +e
+          report=quality-bootstrap-report.txt
+          : > "$report"
+          run_check() {
+            name="$1"
+            shift
+            printf '\n===== %s =====\n' "$name" | tee -a "$report"
+            "$@" >>"$report" 2>&1
+            code=$?
+            printf 'exit_code=%s\n' "$code" | tee -a "$report"
+          }
+          run_check "biome" npx biome check --config-path=biome.json api scripts src public/embed navigate vite.config.js
+          run_check "oxlint" npx oxlint api scripts src public/embed navigate vite.config.js
+          run_check "ruff format" uv run --no-sync ruff format --check scripts tests
+          run_check "ruff lint" uv run --no-sync ruff check scripts tests
+          run_check "pyrefly baseline" uv run --no-sync pyrefly check --baseline=.pyrefly-baseline.json --update-baseline
+          run_check "pyrefly check" uv run --no-sync pyrefly check
+          run_check "pytest" uv run --no-sync pytest -q tests/test_pal_mcp_contract.py
+          run_check "repository ratchet" npm run verify:ratchet
+          run_check "embed test" npm run test:embed
+          cat "$report"
+      - name: Commit deterministic audit outputs
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json package-lock.json uv.lock .pyrefly-baseline.json quality-bootstrap-report.txt
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m "tooling: lock quality stack and capture baseline"
+          git pull --rebase origin chore/quality-gates-2026
+          git push origin HEAD:chore/quality-gates-2026
