@@ -1800,7 +1800,7 @@ vite.config.js format ━━━━━━━━━━━━━━━━━━━�
     8 8 │   
   
 
-Checked 15 files in 22ms. No fixes applied.
+Checked 15 files in 29ms. No fixes applied.
 Found 16 errors.
 check ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -1815,7 +1815,7 @@ exit_code=1
 ::warning file=navigate/navigate.js,line=1,endLine=1,col=6507,endColumn=6552,title=eslint(no-unused-expressions)::navigate/navigate.js:1:6507: Expected expression to be used
 
 Found 3 warnings and 0 errors.
-Finished in 10ms on 12 files with 96 rules using 4 threads.
+Finished in 19ms on 12 files with 96 rules using 4 threads.
 exit_code=0
 
 ===== ruff format =====
@@ -2075,15 +2075,11 @@ exit_code=1
 
 ===== pyrefly baseline =====
  INFO Checking project configured at `/home/runner/work/pal-atlas/pal-atlas/pyproject.toml`
-ERROR Cannot find module `playwright.sync_api` [missing-import]
- --> scripts/interaction-audit.py:2:1
-  |
-2 | from playwright.sync_api import sync_playwright
-  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  |
-  Looked in these locations (from config in `/home/runner/work/pal-atlas/pal-atlas/pyproject.toml`):
-  Import root (inferred from project layout): "/home/runner/work/pal-atlas/pal-atlas/src"
-  Site package path queried from interpreter: ["/home/runner/work/pal-atlas/pal-atlas/.venv/lib/python3.12/site-packages"]
+ INFO 0 errors
+exit_code=0
+
+===== pyrefly check =====
+ INFO Checking project configured at `/home/runner/work/pal-atlas/pal-atlas/pyproject.toml`
 ERROR Type of lambda parameter `error` is unknown [implicit-any-lambda]
   --> scripts/interaction-audit.py:11:33
    |
@@ -2096,6 +2092,12 @@ ERROR Type of lambda parameter `message` is unknown [implicit-any-lambda]
 12 |     page.on("console", lambda message: console_errors.append(message.text) if message.type == "error" else None)
    |                               ^^^^^^^
    |
+ERROR Type of lambda parameter `message` is unknown [implicit-any-lambda]
+ --> scripts/smoke-test.py:8:31
+  |
+8 |     page.on("console", lambda message: errors.append(message.text) if message.type == "error" else None)
+  |                               ^^^^^^^
+  |
 ERROR Cannot find module `mcp.server` [missing-import]
  --> scripts/pal_mcp_server.py:5:1
   |
@@ -2104,48 +2106,7 @@ ERROR Cannot find module `mcp.server` [missing-import]
   |
   Did you mean `http.server`?
   Looked in these locations (from config in `/home/runner/work/pal-atlas/pal-atlas/pyproject.toml`):
-  Import root (inferred from project layout): "/home/runner/work/pal-atlas/pal-atlas/src"
-  Site package path queried from interpreter: ["/home/runner/work/pal-atlas/pal-atlas/.venv/lib/python3.12/site-packages"]
-ERROR Cannot find module `pal_mcp_read_model` [missing-import]
- --> scripts/pal_mcp_server.py:7:8
-  |
-7 | import pal_mcp_read_model as read_model
-  |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  |
-  Looked in these locations (from config in `/home/runner/work/pal-atlas/pal-atlas/pyproject.toml`):
-  Import root (inferred from project layout): "/home/runner/work/pal-atlas/pal-atlas/src"
-  Site package path queried from interpreter: ["/home/runner/work/pal-atlas/pal-atlas/.venv/lib/python3.12/site-packages"]
-ERROR Cannot find module `playwright.sync_api` [missing-import]
- --> scripts/smoke-test.py:2:1
-  |
-2 | from playwright.sync_api import sync_playwright
-  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  |
-  Looked in these locations (from config in `/home/runner/work/pal-atlas/pal-atlas/pyproject.toml`):
-  Import root (inferred from project layout): "/home/runner/work/pal-atlas/pal-atlas/src"
-  Site package path queried from interpreter: ["/home/runner/work/pal-atlas/pal-atlas/.venv/lib/python3.12/site-packages"]
-ERROR Type of lambda parameter `message` is unknown [implicit-any-lambda]
- --> scripts/smoke-test.py:8:31
-  |
-8 |     page.on("console", lambda message: errors.append(message.text) if message.type == "error" else None)
-  |                               ^^^^^^^
-  |
-ERROR Cannot find module `pal_mcp_read_model` [missing-import]
-  --> tests/test_pal_mcp_contract.py:12:8
-   |
-12 | import pal_mcp_read_model as read_model  # noqa: E402
-   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-   |
-  Looked in these locations (from config in `/home/runner/work/pal-atlas/pal-atlas/pyproject.toml`):
-  Import root (inferred from project layout): "/home/runner/work/pal-atlas/pal-atlas/src"
-  Site package path queried from interpreter: ["/home/runner/work/pal-atlas/pal-atlas/.venv/lib/python3.12/site-packages"]
-ERROR Cannot find module `pal_mcp_server` [missing-import]
-  --> tests/test_pal_mcp_contract.py:13:8
-   |
-13 | import pal_mcp_server as server  # noqa: E402
-   |        ^^^^^^^^^^^^^^^^^^^^^^^^
-   |
-  Looked in these locations (from config in `/home/runner/work/pal-atlas/pal-atlas/pyproject.toml`):
+  Search path (from config file): ["/home/runner/work/pal-atlas/pal-atlas", "/home/runner/work/pal-atlas/pal-atlas/scripts"]
   Import root (inferred from project layout): "/home/runner/work/pal-atlas/pal-atlas/src"
   Site package path queried from interpreter: ["/home/runner/work/pal-atlas/pal-atlas/.venv/lib/python3.12/site-packages"]
 ERROR Cannot determine the type parameter `_KT` for generic class `dict[_KT, _VT]` [implicit-any-type-argument]
@@ -2176,13 +2137,8 @@ ERROR Cannot determine the type parameter `_VT` for generic class `dict[_KT, _VT
    |                               ^^^^
    |
   Either specify the type argument explicitly, or specify a default for the type variable.
- INFO 13 errors
+ INFO 8 errors
 exit_code=1
-
-===== pyrefly check =====
- INFO Checking project configured at `/home/runner/work/pal-atlas/pal-atlas/pyproject.toml`
- INFO 0 errors
-exit_code=0
 
 ===== pytest =====
 
@@ -2203,7 +2159,7 @@ E   ModuleNotFoundError: No module named 'mcp'
 =========================== short test summary info ============================
 ERROR tests/test_pal_mcp_contract.py
 !!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!
-1 error in 0.25s
+1 error in 0.49s
 exit_code=2
 
 ===== repository ratchet =====
