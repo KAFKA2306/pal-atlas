@@ -1,15 +1,30 @@
 import os
-from playwright.sync_api import sync_playwright
 
-errors = []
+from playwright.sync_api import ConsoleMessage, sync_playwright
+
+errors: list[str] = []
+
+
+def record_console_error(message: ConsoleMessage) -> None:
+    if message.type == "error":
+        errors.append(message.text)
+
+
 with sync_playwright() as p:
     browser = p.chromium.launch(headless=True)
     page = browser.new_page(viewport={"width": 1440, "height": 1000})
-    page.on("console", lambda message: errors.append(message.text) if message.type == "error" else None)
-    page.goto(os.environ.get("PAL_ATLAS_URL", "http://127.0.0.1:5173"), wait_until="domcontentloaded")
-    for endpoint in ("/api/index.json", "/api/pals.json", "/api/breeding.json", "/api/sources.json", "/api/pals/anubis.json"):
-        assert page.request.get(os.environ.get("PAL_ATLAS_URL", "http://127.0.0.1:5173") + endpoint).ok, f"static API failed: {endpoint}"
-    anubis_detail = page.request.get(os.environ.get("PAL_ATLAS_URL", "http://127.0.0.1:5173") + "/api/pals/anubis.json").json()
+    page.on("console", record_console_error)
+    base_url = os.environ.get("PAL_ATLAS_URL", "http://127.0.0.1:5173")
+    page.goto(base_url, wait_until="domcontentloaded")
+    for endpoint in (
+        "/api/index.json",
+        "/api/pals.json",
+        "/api/breeding.json",
+        "/api/sources.json",
+        "/api/pals/anubis.json",
+    ):
+        assert page.request.get(base_url + endpoint).ok, f"static API failed: {endpoint}"
+    anubis_detail = page.request.get(base_url + "/api/pals/anubis.json").json()
     assert len(anubis_detail["recipes"]["outputs"]) > 0, "reverse output index is empty"
     page.wait_for_selector(".pal-card")
     assert page.locator(".pal-card").count() >= 297, "catalog cards did not render"
@@ -17,8 +32,13 @@ with sync_playwright() as p:
     assert first_ranks == sorted(first_ranks), f"default rank order failed: {first_ranks}"
     assert page.locator(".breeding-recipes").count() == 1, "recipe routes did not render"
     assert page.locator(".recipe-row").count() >= 1, "recipe rows did not render"
-    assert page.locator(".recipe-row .recipe-pal.parent-a").count() == page.locator(".recipe-row .recipe-pal.parent-b").count(), "parent slots are not paired"
-    assert page.locator(".recipe-row .recipe-pal.target").evaluate_all("els => els.every(el => el.tagName === 'SPAN')"), "recipe targets must not be clickable"
+    assert (
+        page.locator(".recipe-row .recipe-pal.parent-a").count()
+        == page.locator(".recipe-row .recipe-pal.parent-b").count()
+    ), "parent slots are not paired"
+    assert page.locator(".recipe-row .recipe-pal.target").evaluate_all(
+        "els => els.every(el => el.tagName === 'SPAN')"
+    ), "recipe targets must not be clickable"
     assert page.locator(".output-panel").count() == 1, "reverse output panel did not render"
     assert page.locator(".output-card").count() > 0, "reverse output cards did not render"
     assert page.locator(".recipe-save").count() > 0, "recipe save controls did not render"
@@ -32,7 +52,9 @@ with sync_playwright() as p:
     assert page.locator("#saved-view").count() == 0, "saved recipe was not removable"
     page.locator(".more-button").click()
     page.wait_for_selector(".more-button", state="detached")
-    assert page.locator(".output-card").count() == len(anubis_detail["recipes"]["outputs"]), "all output recipes did not load"
+    assert page.locator(".output-card").count() == len(anubis_detail["recipes"]["outputs"]), (
+        "all output recipes did not load"
+    )
     output_name = page.locator(".output-card strong").first.inner_text()
     page.locator(".output-card .output-open").first.click()
     assert output_name in page.locator(".trail span").inner_text(), "output card did not select its child"

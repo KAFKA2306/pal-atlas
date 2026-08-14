@@ -5,6 +5,7 @@ import csv
 import json
 import sys
 from pathlib import Path
+from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
@@ -13,11 +14,11 @@ import pal_mcp_read_model as read_model  # noqa: E402
 import pal_mcp_server as server  # noqa: E402
 
 
-def load_data(name: str) -> dict:
+def load_data(name: str) -> dict[str, Any]:
     return json.loads((ROOT / "data" / name).read_text(encoding="utf-8"))
 
 
-def load_public(name: str) -> dict:
+def load_public(name: str) -> dict[str, Any]:
     return json.loads((ROOT / "public" / "api" / name).read_text(encoding="utf-8"))
 
 
@@ -112,7 +113,9 @@ def test_conflict_state_is_fail_close_not_false_agreement() -> None:
     conflicts = read_model.get_conflicts()
     public_conflicts = load_public("conflicts.json")
     assert conflicts["evaluation_status"] == "partial"
-    assert conflicts["null_reason"] == "registered_cross_check_sources_are_not_all_machine_ingested_as_field_level_claims"
+    assert (
+        conflicts["null_reason"] == "registered_cross_check_sources_are_not_all_machine_ingested_as_field_level_claims"
+    )
     assert public_conflicts["evaluationStatus"] == "partial"
     assert public_conflicts["nullReason"] == conflicts["null_reason"]
 

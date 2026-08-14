@@ -1,0 +1,28 @@
+{
+  "formatter": {
+    "enabled": true,
+    "indentStyle": "space",
+    "indentWidth": 2
+  },
+  "linter": {
+    "enabled": false
+  },
+  "assist": {
+    "actions": {
+      "source": {
+        "organizeImports": "on"
+      }
+    }
+  },
+  "files": {
+    "ignoreUnknown": true,
+    "includes": [
+      "api/**",
+      "scripts/**/*.mjs",
+      "src/**",
+      "public/embed/**",
+      "navigate/**/*.js",
+      "vite.config.js"
+    ]
+  }
+}

@@ -64,11 +64,21 @@ GET /api/health
 
 ## ローカル実行
 
+Node.js 22、Python 3.12、uvを前提にします。依存関係とcommit hookは1コマンドで揃えます。
+
 ```bash
-npm install
+npm run setup
 npm run data
 npm run dev
 ```
+
+変更を提出する前の正準チェックは次の1コマンドです。
+
+```bash
+npm run check
+```
+
+`npm run check`は、変更されたJavaScriptにBiome/Oxlint、Python全体にRuff/Pyrefly strict、既存repository ratchet、embed contract、生成データと静的APIを使うMCP contractを順に実行します。
 
 Neo4j APIを起動する場合:
 
@@ -76,7 +86,24 @@ Neo4j APIを起動する場合:
 npm run api
 ```
 
+Python MCPを起動する場合:
+
+```bash
+uv sync --locked
+npm run data
+npm run static-api
+uv run python scripts/pal_mcp_server.py
+```
+
 `npm run data`は取得元からデータを読み込み、正規化JSONとNeo4j用CSV/Cypherを生成します。生成スナップショットは大容量のためGit管理外で、ローカル実行とGitHub Actionsの双方で再生成します。
+
+## 品質ゲート
+
+- JavaScript: `package-lock.json`を正準lockとし、Biomeでformat/import整理、Oxlintでlintします。既存全体のformat差分を一括生成せず、`main`との差分・staged・working tree・untrackedの変更ファイルだけを厳格化します。
+- Python: `uv.lock`を正準lockとし、`scripts/`と`tests/`全体をRuff format/lintとPyrefly strictで検証します。baselineや広域ignoreは使いません。
+- `prek`: commit時はネットワーク取得やE2Eを走らせず、同じ静的品質ゲートだけを再利用します。
+- Nx/Turborepoは、独立build/test単位を持つmonorepoではないため導入しません。
+- TypeScript/`tsc`/Zodは、このrepositoryがJavaScript実装であるため導入しません。
 
 ## 主な構成
 
@@ -86,6 +113,7 @@ npm run api
 - `dist/` — GitHub Pages向け生成物
 - `ontology/project.yaml` — 取得・計算・公開判定の証拠モデル
 - `.github/workflows/deploy-pages.yml` — データ更新、ビルド、Pages公開
+- `.github/workflows/quality.yml` — lock drift、formatter/linter、型、MCP contractのPR品質ゲート
 
 ## 情報源と注意点
 
@@ -93,4 +121,4 @@ npm run api
 
 本プロジェクトはPocketpairとは関係のない非公式ファンプロジェクトです。名称・画像などの権利は各権利者に帰属します。
 
-**README最終監査:** 2026-08-12
+**README最終監査:** 2026-08-15
