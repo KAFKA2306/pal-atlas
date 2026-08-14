@@ -48,8 +48,9 @@ jobs:
           path.write_text(text, encoding='utf-8')
       - name: Normalize Python sources
         run: |
-          uv run --no-sync ruff check --fix scripts tests
+          uv run --no-sync ruff check --fix scripts tests || true
           uv run --no-sync ruff format scripts tests
+          uv run --no-sync ruff check scripts tests
       - name: Verify Python clean gate
         run: |
           uv run --no-sync ruff format --check scripts tests
