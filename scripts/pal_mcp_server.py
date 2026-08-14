@@ -2,9 +2,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from mcp.server import MCPServer
-
 import pal_mcp_read_model as read_model
+from mcp.server import MCPServer
 
 mcp = MCPServer(
     "PAL ATLAS",

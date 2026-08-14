@@ -55,9 +55,7 @@ def _dataset() -> tuple[dict[str, Any], dict[str, Any], dict[str, Any], dict[str
 
 def _sources_by_id(source_data: dict[str, Any]) -> dict[str, dict[str, Any]]:
     return {
-        str(row.get("id")): row
-        for row in source_data.get("sources", [])
-        if isinstance(row, dict) and row.get("id")
+        str(row.get("id")): row for row in source_data.get("sources", []) if isinstance(row, dict) and row.get("id")
     }
 
 
@@ -102,7 +100,8 @@ def search_pals(query: str | None = None, element: str | None = None, limit: int
     if query:
         needle = query.casefold().strip()
         rows = [
-            row for row in rows
+            row
+            for row in rows
             if needle in f"{row.get('id', '')} {row.get('nameEn', '')} {row.get('nameJa', '')}".casefold()
         ]
     if element:
@@ -157,7 +156,11 @@ def _pair_matches(row: dict[str, Any], parent_a: str, parent_b: str) -> bool:
 def _breed_result(
     row: dict[str, Any], *, kind: str, meta: dict[str, Any], source_data: dict[str, Any]
 ) -> dict[str, Any]:
-    derivation = "deterministic nearest-breeding-rank formula" if kind == "normal_formula" else "source-reported special combination"
+    derivation = (
+        "deterministic nearest-breeding-rank formula"
+        if kind == "normal_formula"
+        else "source-reported special combination"
+    )
     return {
         **row,
         "result_kind": kind,

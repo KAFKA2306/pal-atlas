@@ -32,9 +32,10 @@ with sync_playwright() as p:
     assert first_ranks == sorted(first_ranks), f"default rank order failed: {first_ranks}"
     assert page.locator(".breeding-recipes").count() == 1, "recipe routes did not render"
     assert page.locator(".recipe-row").count() >= 1, "recipe rows did not render"
-    assert page.locator(".recipe-row .recipe-pal.parent-a").count() == page.locator(
-        ".recipe-row .recipe-pal.parent-b"
-    ).count(), "parent slots are not paired"
+    assert (
+        page.locator(".recipe-row .recipe-pal.parent-a").count()
+        == page.locator(".recipe-row .recipe-pal.parent-b").count()
+    ), "parent slots are not paired"
     assert page.locator(".recipe-row .recipe-pal.target").evaluate_all(
         "els => els.every(el => el.tagName === 'SPAN')"
     ), "recipe targets must not be clickable"
@@ -51,9 +52,9 @@ with sync_playwright() as p:
     assert page.locator("#saved-view").count() == 0, "saved recipe was not removable"
     page.locator(".more-button").click()
     page.wait_for_selector(".more-button", state="detached")
-    assert page.locator(".output-card").count() == len(
-        anubis_detail["recipes"]["outputs"]
-    ), "all output recipes did not load"
+    assert page.locator(".output-card").count() == len(anubis_detail["recipes"]["outputs"]), (
+        "all output recipes did not load"
+    )
     output_name = page.locator(".output-card strong").first.inner_text()
     page.locator(".output-card .output-open").first.click()
     assert output_name in page.locator(".trail span").inner_text(), "output card did not select its child"
