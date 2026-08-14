@@ -8,6 +8,7 @@ dependencies = [
 
 [dependency-groups]
 dev = [
+  "playwright>=1,<2",
   "prek>=0.4.11",
   "pyrefly>=1.1.1",
   "pytest>=8,<9",
@@ -25,6 +26,6 @@ select = ["E", "F", "I", "UP", "B", "SIM"]
 [tool.pyrefly]
 project-includes = ["scripts/*.py", "tests/*.py"]
 project-excludes = ["data", "dist", ".venv"]
+search-path = [".", "scripts"]
 python-version = "3.12"
 preset = "strict"
-baseline = ".pyrefly-baseline.json"
