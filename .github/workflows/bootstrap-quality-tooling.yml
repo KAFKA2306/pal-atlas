@@ -59,6 +59,7 @@ jobs:
       - name: Materialize canonical data and verify MCP contract
         run: |
           npm run data
+          npm run static-api
           uv run --no-sync pytest -q tests/test_pal_mcp_contract.py
       - name: Verify existing JavaScript contracts
         run: |
