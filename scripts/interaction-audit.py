@@ -1,20 +1,34 @@
 import os
-from playwright.sync_api import sync_playwright
+
+from playwright.sync_api import ConsoleMessage, Error, sync_playwright
 
 url = os.environ.get("PAL_ATLAS_URL", "http://127.0.0.1:5173")
-page_errors = []
-console_errors = []
+page_errors: list[str] = []
+console_errors: list[str] = []
+
+
+def record_page_error(error: Error) -> None:
+    page_errors.append(str(error))
+
+
+def record_console_error(message: ConsoleMessage) -> None:
+    if message.type == "error":
+        console_errors.append(message.text)
+
 
 with sync_playwright() as p:
     browser = p.chromium.launch(headless=True)
     page = browser.new_page(viewport={"width": 1280, "height": 900})
-    page.on("pageerror", lambda error: page_errors.append(str(error)))
-    page.on("console", lambda message: console_errors.append(message.text) if message.type == "error" else None)
+    page.on("pageerror", record_page_error)
+    page.on("console", record_console_error)
     page.goto(url, wait_until="domcontentloaded")
     page.wait_for_selector(".pal-card")
     print("loaded", flush=True)
 
-    results = {"cards": page.locator(".pal-card").count(), "first_rank": page.locator(".pal-card .card-rank").first.inner_text()}
+    results = {
+        "cards": page.locator(".pal-card").count(),
+        "first_rank": page.locator(".pal-card .card-rank").first.inner_text(),
+    }
     results["recipe_anchor"] = page.locator("#recipe-view").count()
     results["recipe_panel_visible"] = page.locator(".recipe-panel").is_visible()
 
