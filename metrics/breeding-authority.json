@@ -1,0 +1,41 @@
+{
+  "schemaVersion": "pal-atlas.breeding-authority.v1",
+  "evaluatedAt": "2026-08-15",
+  "hypothesis": {
+    "id": "BREEDING-CURRENT-AUTHORITY-001",
+    "statement": "The currently available official Palworld sources are sufficient to label PAL ATLAS breeding formulas and recipe results as verified current game facts.",
+    "decision": "REJECT"
+  },
+  "officialEvidence": [
+    {
+      "url": "https://docs.palworldgame.com/ja/",
+      "publisher": "Pocketpair",
+      "claim": "The current official Palworld Server Guide identifies its documentation version as 1.0.0.",
+      "supportsFormula": false
+    },
+    {
+      "url": "https://docs.palworldgame.com/ja/settings-and-operation/technologyids/",
+      "publisher": "Pocketpair",
+      "claim": "The current official technology ID list includes BreedFarm / 配合牧場, confirming breeding remains a supported game system.",
+      "supportsFormula": false
+    }
+  ],
+  "repositoryEvidence": {
+    "path": "scripts/build-provenance.mjs",
+    "observedState": "partial",
+    "reason": "Registered cross-check sources are not all machine-ingested as field-level claims, so absence of disagreement cannot be treated as agreement."
+  },
+  "result": {
+    "currentGameVersionAuthority": "1.0.0",
+    "breedingSystemExists": true,
+    "formulaOfficiallyVerified": false,
+    "specialRecipesOfficiallyVerified": false,
+    "currentBreedingTruthStatus": "UNKNOWN",
+    "productPolicy": "Keep PAL ATLAS breeding outputs explicitly derived/source-bound. Do not present the rank formula or special recipe table as official or verified-current until evidence closes the field-level authority gap."
+  },
+  "reversalConditions": [
+    "A Pocketpair primary source publishes or exposes the breeding-result rule at field level, including enough semantics to reproduce the rank formula used by PAL ATLAS.",
+    "Special recipe identities used by PAL ATLAS are covered by authoritative current-version evidence with unresolved identity conflicts equal to zero.",
+    "The repository persists the comparison artifact and deterministic validation passes on the exact revision being released."
+  ]
+}
