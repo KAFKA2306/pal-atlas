@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
+import { updateSearchState } from '../public/embed/breed/url-state.js';
 import { findTargetRecipes, normalizeAttribution, resolvePair, samePair } from '../public/embed/breed/widget.js';
 
 const breeding = {
@@ -25,15 +26,40 @@ assert.equal(normalizeAttribution('partner-01.example'), 'partner-01.example');
 assert.equal(normalizeAttribution('bad value'), null);
 assert.equal(normalizeAttribution('x'.repeat(65)), null);
 
+const pairState = new URLSearchParams(updateSearchState('?lang=en&partner=guide&campaign=launch&target=old', {
+  parentA: 'a',
+  parentB: 'b',
+  target: '',
+}));
+assert.equal(pairState.get('lang'), 'en');
+assert.equal(pairState.get('partner'), 'guide');
+assert.equal(pairState.get('campaign'), 'launch');
+assert.equal(pairState.get('parentA'), 'a');
+assert.equal(pairState.get('parentB'), 'b');
+assert.equal(pairState.has('target'), false);
+
+const targetState = new URLSearchParams(updateSearchState('?lang=ja&parentA=a&parentB=b', {
+  parentA: '',
+  parentB: '',
+  target: 'target',
+}));
+assert.equal(targetState.get('lang'), 'ja');
+assert.equal(targetState.has('parentA'), false);
+assert.equal(targetState.has('parentB'), false);
+assert.equal(targetState.get('target'), 'target');
+
 const html = await readFile(new URL('../public/embed/breed/index.html', import.meta.url), 'utf8');
 const js = await readFile(new URL('../public/embed/breed/widget.js', import.meta.url), 'utf8');
+const urlStateJs = await readFile(new URL('../public/embed/breed/url-state.js', import.meta.url), 'utf8');
 const docs = await readFile(new URL('../docs/embed.md', import.meta.url), 'utf8');
 const readme = await readFile(new URL('../README.md', import.meta.url), 'utf8');
 const metrics = JSON.parse(await readFile(new URL('../metrics/embed-kpi.json', import.meta.url), 'utf8'));
 
 assert.match(html, /id="widget"/);
 assert.match(html, /\.\/widget\.js/);
+assert.match(html, /\.\/url-state\.js/);
 for (const event of ['embed_loaded', 'breed_searched', 'pal_atlas_opened']) assert.match(js, new RegExp(event));
+assert.match(urlStateJs, /history\.replaceState/);
 assert.match(js, /非公式ファンプロジェクト/);
 assert.match(js, /\.\.\/\.\.\/api\/pals\.json/);
 assert.match(js, /\.\.\/\.\.\/api\/breeding\.json/);
