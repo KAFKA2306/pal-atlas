@@ -105,9 +105,15 @@ assert.match(urlStateJs, /history\.replaceState/);
 assert.match(js, /非公式ファンプロジェクト/);
 assert.match(js, /\.\.\/\.\.\/api\/pals\.json/);
 assert.match(js, /\.\.\/\.\.\/api\/breeding\.json/);
-assert.match(docs, /https:\/\/kafka2306\.github\.io\/pal-atlas\/embed\/breed\//);
+assert.match(
+  docs,
+  /https:\/\/kafka2306\.github\.io\/pal-atlas\/embed\/breed\//,
+);
 assert.match(docs, /partner=example-site&campaign=breeding-guide/);
-assert.match(readme, /https:\/\/kafka2306\.github\.io\/pal-atlas\/embed\/breed\//);
+assert.match(
+  readme,
+  /https:\/\/kafka2306\.github\.io\/pal-atlas\/embed\/breed\//,
+);
 assert.match(readme, /docs\/embed\.md/);
 
 assert.equal(metrics.schemaVersion, 1);
