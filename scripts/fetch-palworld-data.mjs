@@ -24,7 +24,7 @@ const ELEMENTS = new Map([
 const sources = [
   { id: 'palworld-gg', title: 'Palworld.gg Paldeck / Breeding Calculator', url: EN_URL, role: '297-entry catalog and Breeding Rank' },
   { id: 'palworld-wiki', title: 'Palworld Wiki — Breeding', url: 'https://palworld.wiki.gg/wiki/Breeding', role: 'normal formula and special-combination rule cross-check' },
-  { id: 'palworld-wiki-images', title: 'Palworld Wiki — Pal icon files', url: 'https://palworld.wiki.gg/wiki/Template:Icon', role: '297 verified external icon URLs' },
+  { id: 'palworld-wiki-images', title: 'Palworld Wiki — Pal icon files', url: 'https://palworld.wiki.gg/wiki/Template:Icon', role: 'external icon URL cross-check when available' },
   { id: 'webp-proxy', title: 'wsrv.nl image optimizer', url: 'https://images.weserv.nl/', role: 'external WebP delivery URL generated from each source image' },
   { id: 'game8', title: 'Game8 — Breeding Combos Calculator', url: 'https://game8.co/games/Palworld/archives/440530', role: 'breeding workflow and special-combination cross-check' },
   { id: 'paldeck', title: 'Paldeck', url: 'https://www.paldeck.cc/breeding', role: 'independent database cross-check' },
@@ -101,8 +101,6 @@ async function loadWikiIconUrls(pals) {
     }
     await new Promise((resolve) => setTimeout(resolve, 150));
   }
-  const missing = pals.filter((pal) => !result.has(pal.name));
-  if (missing.length) throw new Error(`Palworld Wiki icon data missing for ${missing.length} pals: ${missing.map((pal) => pal.name).join(', ')}`);
   return result;
 }
 
@@ -130,6 +128,8 @@ const sourceBySlug = new Map(sourcePals.map((pal) => [pal.slug.trim(), pal]));
 const pals = english.map((pal) => {
   const ja = jaByImage.get(pal.imageFile);
   const source = sourceBySlug.get(slug(pal.name));
+  const wikiIcon = wikiIcons.get(pal.name);
+  const imageReferenceUrl = wikiIcon?.url ?? pal.imageUrl;
   if (!source) throw new Error(`Source data missing for ${pal.name}`);
   return {
     id: slug(pal.name),
@@ -139,9 +139,9 @@ const pals = english.map((pal) => {
     imageFile: pal.imageFile,
     imageUrl: pal.imageUrl,
     imageOriginalUrl: pal.imageUrl,
-    imageReferenceUrl: wikiIcons.get(pal.name).url,
-    imageWebpUrl: webpUrl(wikiIcons.get(pal.name).url),
-    imageMime: wikiIcons.get(pal.name).mime,
+    imageReferenceUrl,
+    imageWebpUrl: webpUrl(imageReferenceUrl),
+    imageMime: wikiIcon?.mime ?? null,
     imageDelivery: 'webp-proxy',
     elements: pal.elements,
     rarity: pal.rarity,
