@@ -1,5 +1,9 @@
 # PAL ATLAS — パル図鑑・配合検索
 
+[![Deploy Pal Atlas to GitHub Pages](https://github.com/KAFKA2306/pal-atlas/actions/workflows/deploy-pages.yml/badge.svg)](https://github.com/KAFKA2306/pal-atlas/actions/workflows/deploy-pages.yml)
+[![Quality Gates](https://github.com/KAFKA2306/pal-atlas/actions/workflows/quality.yml/badge.svg)](https://github.com/KAFKA2306/pal-atlas/actions/workflows/quality.yml)
+[![Validate PAL ATLAS navigator](https://github.com/KAFKA2306/pal-atlas/actions/workflows/uiux-navigator.yml/badge.svg)](https://github.com/KAFKA2306/pal-atlas/actions/workflows/uiux-navigator.yml)
+
 **欲しいパルが決まっているなら、探すべきはそのパルではなく「親」かもしれない。**
 
 PAL ATLAS は、Palworldの図鑑を眺めるだけでなく、**「この2体から何が生まれるか」と「目的のパルを作るにはどの親が必要か」を両方向からたどれる**非公式ファンサイトです。
