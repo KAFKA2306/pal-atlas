@@ -9,6 +9,7 @@ const byId = new Map(pals.map((pal) => [pal.id, pal]));
 const featuredNormal = breedingData.featuredNormal;
 const special = breedingData.special.filter((row) => row.status === 'resolved');
 const outputs = childrenUiData.outputs;
+const DEFAULT_CATALOG_LIMIT = 12;
 
 const copy = {
   ja: {
@@ -48,6 +49,7 @@ const state = {
   stack: [byId.has('anubis') ? 'anubis' : pals[0].id],
   search: '',
   element: 'all',
+  showAllPals: false,
   showAllOutputs: false,
 };
 
@@ -146,16 +148,32 @@ function filteredPals() {
     .sort((a, b) => a.breedingRank - b.breedingRank || a.order - b.order);
 }
 
+function catalogState() {
+  const items = filteredPals();
+  const isFiltered = state.search.trim() !== '' || state.element !== 'all';
+  const visible = state.showAllPals || isFiltered ? items : items.slice(0, DEFAULT_CATALOG_LIMIT);
+  return {
+    items,
+    visible,
+    expandable: !state.showAllPals && !isFiltered && items.length > visible.length,
+  };
+}
+
 function catalogMarkup(items) {
   return items.length ? items.map((item) => card(item)).join('') : `<div class="empty">${t('noResult')}</div>`;
 }
 
 function updateCatalog() {
-  const items = filteredPals();
+  const catalog = catalogState();
   const grid = document.querySelector('.atlas-grid');
-  if (grid) grid.innerHTML = catalogMarkup(items);
-  const resultCount = document.querySelector('.result-count');
-  if (resultCount) resultCount.textContent = `${items.length} / ${pals.length}`;
+  if (grid) grid.innerHTML = catalogMarkup(catalog.visible);
+  const resultCount = document.querySelector('[data-catalog-count]');
+  if (resultCount) resultCount.textContent = `${catalog.visible.length} / ${catalog.items.length}`;
+  const moreButton = document.querySelector('[data-more-pals]');
+  if (moreButton) {
+    moreButton.hidden = !catalog.expandable;
+    moreButton.textContent = `${t('more')} / ${catalog.items.length}`;
+  }
 }
 
 function applyTheme() {
@@ -201,16 +219,17 @@ function insight(pal) {
 function render() {
   applyTheme();
   const pal = selected();
-  const filtered = filteredPals();
+  const catalog = catalogState();
   const allElements = [...new Set(pals.flatMap((item) => item.elements))].sort();
   const savedRows = savedRecipeRows();
   const sourceStep = savedRows.length ? '06' : '05';
   document.querySelector('#app').innerHTML = `<main class="shell">
     <header class="topbar" id="top"><a class="brand" href="#top"><span class="brand-glyph">✳</span><span>PAL ATLAS</span></a><label class="search-box topbar-search"><span>⌕</span><input data-search type="search" value="${esc(state.search)}" placeholder="${t('search')}" /></label><nav><button class="text-button saved-link" data-saved-link="true">♡ ${t('saved')} ${savedRows.length}</button><button class="icon-button" data-lang-toggle="true">${state.lang === 'ja' ? 'EN' : '日'}</button><button class="icon-button" data-theme-toggle="true">${state.theme === 'dark' ? '☼' : '☾'}</button></nav></header>
     <section class="workspace" id="atlas-view">
-      <div class="main-column"><div class="section-head"><div><span class="micro-label">01 / ${t('choose')}</span><h2>${t('cards')}</h2></div><span class="result-count">${filtered.length} / ${pals.length}</span></div>
+      <div class="main-column"><div class="section-head"><div><span class="micro-label">01 / ${t('choose')}</span><h2>${t('cards')}</h2></div><span class="result-count" data-catalog-count>${catalog.visible.length} / ${catalog.items.length}</span></div>
         <div class="controls"><select data-element aria-label="${t('all')}"><option value="all">${t('all')} elements</option>${allElements.map((element) => `<option value="${element}" ${state.element === element ? 'selected' : ''}>${elText(element)}</option>`).join('')}</select></div>
-        <div class="atlas-grid">${catalogMarkup(filtered)}</div>
+        <div class="atlas-grid">${catalogMarkup(catalog.visible)}</div>
+        <button class="more-button catalog-more" data-more-pals="true" ${catalog.expandable ? '' : 'hidden'}>${t('more')} / ${catalog.items.length}</button>
       </div>
       <aside class="detail-column"><div class="detail-card"><div class="trail"><button data-back ${state.stack.length > 1 ? '' : 'disabled'}>←</button><span>${state.stack.map((id) => esc(palName(byId.get(id)))).join(' <i>→</i> ')}</span></div><div class="selected-portrait">${imageMarkup(pal, palName(pal))}</div><div class="selected-title"><span class="micro-label">#${String(pal.order).padStart(3, '0')} / ${pal.rarityTier}</span><h2>${esc(palName(pal))}</h2><p>${pal.nameEn === pal.nameJa ? '' : esc(state.lang === 'ja' ? pal.nameEn : pal.nameJa)}</p></div><div class="tag-row">${pal.elements.map((element) => `<span class="tag element-${element}">${elText(element)}</span>`).join('')}<span class="tag rank-tag">${t('rank')} ${pal.breedingRank}</span></div><div class="divider"></div><div class="detail-label">${t('insight')}</div>${insight(pal)}</div>
         ${recipeView(pal)}${outputView(pal)}<div class="formula-card"><span class="micro-label">04 / ${t('formula')}</span><p>${t('formulaText')}</p><code>⌊ (A + B + 1) / 2 ⌋ → nearest</code></div>
@@ -227,7 +246,7 @@ function bind() {
   if (!app || appBound) return;
   appBound = true;
   app.addEventListener('click', async (event) => {
-    const target = event.target.closest('[data-select], [data-back], [data-save-recipe], [data-saved-link], [data-more-outputs], [data-lang-toggle], [data-theme-toggle]');
+    const target = event.target.closest('[data-select], [data-back], [data-save-recipe], [data-saved-link], [data-more-pals], [data-more-outputs], [data-lang-toggle], [data-theme-toggle]');
     if (!target || !app.contains(target)) return;
     if (target.dataset.saveRecipe) {
       event.preventDefault();
@@ -244,6 +263,11 @@ function bind() {
       document.querySelector('#saved-view')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       return;
     }
+    if (target.dataset.morePals !== undefined) {
+      state.showAllPals = true;
+      updateCatalog();
+      return;
+    }
     if (target.dataset.moreOutputs !== undefined) {
       const detail = await (await fetch(`./api/pals/${selected().id}.json`)).json();
       outputCache.set(selected().id, detail.recipes.outputs);
@@ -257,7 +281,7 @@ function bind() {
       state.stack = target.dataset.drill === 'true' ? [...state.stack, id] : [id];
       state.showAllOutputs = false;
       render();
-      if (matchMedia('(max-width: 680px)').matches) requestAnimationFrame(() => document.querySelector('.detail-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+      if (matchMedia('(max-width: 1020px)').matches) requestAnimationFrame(() => document.querySelector('.detail-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
       return;
     }
     if (target.dataset.back !== undefined) {
