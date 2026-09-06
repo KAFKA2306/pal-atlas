@@ -68,6 +68,14 @@ jobs:
           grep -F 'pal_atlas_opened' dist/embed/breed/widget.js
           grep -F '../../api/pals.json' dist/embed/breed/widget.js
           grep -F '../../api/breeding.json' dist/embed/breed/widget.js
+      - name: Verify primary Pal journey
+        run: |
+          set -euo pipefail
+          grep -F 'const DEFAULT_CATALOG_LIMIT = 12;' src/main.js
+          grep -F "const isFiltered = state.search.trim() !== '' || state.element !== 'all';" src/main.js
+          grep -F 'data-more-pals="true"' src/main.js
+          grep -F "matchMedia('(max-width: 1020px)')" src/main.js
+          grep -R -F 'data-more-pals' dist/assets
       - name: Verify pastel production artifact
         run: |
           set -euo pipefail
