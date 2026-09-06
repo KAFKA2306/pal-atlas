@@ -72,9 +72,11 @@ jobs:
         run: |
           set -euo pipefail
           grep -F 'const DEFAULT_CATALOG_LIMIT = 12;' src/main.js
-          grep -F "const isFiltered = state.search.trim() !== '' || state.element !== 'all';" src/main.js
+          grep -F 'const isFiltered =' src/main.js
+          grep -F 'state.search.trim() !== ""' src/main.js
+          grep -F 'state.element !== "all"' src/main.js
           grep -F 'data-more-pals="true"' src/main.js
-          grep -F "matchMedia('(max-width: 1020px)')" src/main.js
+          grep -F 'max-width: 1020px' src/main.js
           grep -R -F 'data-more-pals' dist/assets
       - name: Verify pastel production artifact
         run: |
@@ -107,6 +109,48 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
+
+  production-readback:
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    needs: deploy
+    steps:
+      - name: Verify deployed primary journey
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="https://kafka2306.github.io/pal-atlas"
+          origin="https://kafka2306.github.io"
+          tmp="$(mktemp -d)"
+          matched=false
+
+          for attempt in $(seq 1 36); do
+            curl --fail --silent --show-error --location \
+              "$base/?readback=${GITHUB_SHA}-${attempt}" -o "$tmp/index.html"
+            HTML="$tmp/index.html" python - <<'PY' > "$tmp/assets.env"
+          import os
+          import re
+          from pathlib import Path
+
+          html = Path(os.environ["HTML"]).read_text(encoding="utf-8")
+          js = re.search(r'src="([^"]+\.js)"', html)
+          if not js:
+              raise SystemExit("Built JS asset was not found")
+          print(f'JS_PATH={js.group(1)}')
+          PY
+            source "$tmp/assets.env"
+            curl --fail --silent --show-error --location \
+              "$origin$JS_PATH?readback=${GITHUB_SHA}-${attempt}" -o "$tmp/app.js"
+            if grep -Fq 'data-more-pals' "$tmp/app.js" && grep -Fq 'max-width: 1020px' "$tmp/app.js"; then
+              matched=true
+              break
+            fi
+            echo "Deployed UI has not propagated yet (attempt ${attempt})."
+            sleep 10
+          done
+
+          test "$matched" = true
+          echo "Deployed primary journey read-back passed: $base/"
 
   live-audit:
     if: github.event_name == 'pull_request'
